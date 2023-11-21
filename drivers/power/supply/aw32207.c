@@ -1096,12 +1096,6 @@ static int aw32207_driver_probe(struct i2c_client *client,
 	ret = aw32207_parse_dt(info, &client->dev);
 	if (ret < 0)
 		return ret;
-	ret = aw32207_get_vender_code();
-	if (ret != 2) {
-		pr_err("%s: get vendor id failed\n", __func__);
-		devm_kfree(&client->dev, info);
-		return -ENODEV;
-	}
 	/* Register charger device */
 	info->chg_dev = charger_device_register(info->chg_dev_name,
 			&client->dev, info, &aw32207_chg_ops, &info->chg_props);
@@ -1110,6 +1104,12 @@ static int aw32207_driver_probe(struct i2c_client *client,
 		pr_err("%s: register charger device failed\n", __func__);
 		ret = PTR_ERR(info->chg_dev);
 		return ret;
+	}
+
+	ret = aw32207_get_vender_code();
+	if (ret != 2) {
+		pr_err("%s: get vendor id failed\n", __func__);
+		return -ENODEV;
 	}
 
 	charger_cfg.drv_data = info;

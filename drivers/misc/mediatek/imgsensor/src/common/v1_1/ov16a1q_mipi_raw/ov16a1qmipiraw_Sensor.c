@@ -46,7 +46,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 //extern int curr_sensor_id;
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = OV16A1Q_SENSOR_ID,
-	.checksum_value = 0x2b68b5ad,	/* checksum value for Camera Auto Test */
+	.checksum_value = 0xab886e5f,	/* checksum value for Camera Auto Test */
 
 	.pre = {
 		.pclk = 100000000,	

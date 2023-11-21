@@ -36,7 +36,7 @@
 
 #define ENABLE_SYS_ZEROFLASH true
 
-#define FW_IMAGE_NAME "td4321_boe_koobee_hdl_spi_confg.img"
+#define FW_IMAGE_NAME "K6315_PR2100022804-td4321_boe_koobee_i2c_Configid_004_DoubleTap_20230424.img"
 
 #define BOOT_CONFIG_ID "BOOT_CONFIG"
 

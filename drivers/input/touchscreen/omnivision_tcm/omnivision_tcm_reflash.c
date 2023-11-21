@@ -31,9 +31,15 @@
 #include <linux/crc32.h>
 #include <linux/firmware.h>
 #include "omnivision_tcm_core.h"
-/*
+
+#ifdef CONFIG_PRIZE_HARDWARE_INFO
+#include "../../../misc/mediatek/hardware_info/hardware_info.h"
+
+extern struct hardware_info current_tp_info;
+#endif
+
 #define STARTUP_REFLASH
-*/
+
 #define FORCE_REFLASH false
 
 #define ENABLE_SYS_REFLASH true
@@ -42,7 +48,7 @@
 
 #define CUSTOM_DIR_NAME "custom"
 
-#define FW_IMAGE_NAME "td4321_boe_koobee_hdl_spi_confg.img"
+#define FW_IMAGE_NAME "K6315_PR2100022804-td4321_boe_koobee_i2c_Configid_004_DoubleTap_20230424.img"
 
 #define FW_IMAGE_NAME_MANUAL "omnivision/reflash_firmware_manual.img"
 
@@ -56,7 +62,7 @@
 
 #define DISP_CONFIG_ID "DISPLAY"
 
-#define FB_READY_COUNT 2
+#define FB_READY_COUNT 1
 
 #define FB_READY_WAIT_MS 100
 
@@ -950,7 +956,7 @@ static enum update_area reflash_compare_id_info(void)
 		if (image_config_id[idx] > device_config_id[idx]) {
 			LOGN(tcm_hcd->pdev->dev.parent,
 					"Image config ID newer than device config ID\n");
-			update_area = CONFIG_ONLY;
+			update_area = FIRMWARE_CONFIG;
 			goto exit;
 		} else if (image_config_id[idx] < device_config_id[idx]) {
 			LOGN(tcm_hcd->pdev->dev.parent,
@@ -2062,7 +2068,7 @@ reset:
 	if (!do_reset)
 		goto exit;
 
-	if (tcm_hcd->reset_n_reinit(tcm_hcd, false, true) < 0) {
+	if (tcm_hcd->reset_n_reinit(tcm_hcd, true, true) < 0) {   //prize modify by wangfei for hw reset 20210716 
 		LOGE(tcm_hcd->pdev->dev.parent,
 				"Failed to do reset\n");
 	}
@@ -2244,7 +2250,7 @@ static int reflash_update_app_firmware(void)
 	retval = 0;
 
 reset:
-	if (tcm_hcd->reset_n_reinit(tcm_hcd, false, true) < 0) {
+	if (tcm_hcd->reset_n_reinit(tcm_hcd, true, true) < 0) {      //prize modify by wangfei for hw reset 20210716 
 		LOGE(tcm_hcd->pdev->dev.parent,
 				"Failed to do reset\n");
 	}
@@ -2256,6 +2262,7 @@ reset:
 	return retval;
 }
 
+extern int ovt_tcm_get_app_info(struct ovt_tcm_hcd *tcm_hcd);
 
 static int reflash_do_reflash(void)
 {
@@ -2328,6 +2335,11 @@ exit:
 		reflash_hcd->image_size = 0;
 	}
 
+#ifdef CONFIG_PRIZE_HARDWARE_INFO
+	ovt_tcm_get_app_info(tcm_hcd);
+	sprintf(current_tp_info.chip,"FW:0x%c%c", tcm_hcd->app_info.customer_config_id[6],tcm_hcd->app_info.customer_config_id[7]);
+#endif
+
 	atomic_set(&tcm_hcd->firmware_flashing, 0);
 	wake_up_interruptible(&tcm_hcd->reflash_wq);
 	return retval;
@@ -2345,15 +2357,16 @@ static void reflash_startup_work(struct work_struct *work)
 #ifdef CONFIG_FB
 	timeout = FB_READY_TIMEOUT_S * 1000 / FB_READY_WAIT_MS;
 
-	while (tcm_hcd->fb_ready != FB_READY_COUNT) {
-		if (timeout == 0) {
-			LOGE(tcm_hcd->pdev->dev.parent,
-					"Timed out waiting for FB ready\n");
-			return;
-		}
-		msleep(FB_READY_WAIT_MS);
-		timeout--;
-	}
+	//while (tcm_hcd->fb_ready != FB_READY_COUNT) {
+//		if (timeout == 0) {
+	//		printk("Timed out waiting for FB ready\n");
+	//		printk("[%s][%d]-------------\n",__func__, __LINE__);
+	//		return;
+	//	}
+	//	msleep(FB_READY_WAIT_MS);
+	//	timeout--;
+	//}
+	msleep(5000);
 #endif
 
 	pm_stay_awake(&tcm_hcd->pdev->dev);

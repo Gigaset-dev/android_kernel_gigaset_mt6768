@@ -37,6 +37,9 @@ extern struct hardware_info current_msensor_info;
 extern struct hardware_info current_alsps_info;
 extern struct hardware_info current_gsensor_info;
 extern struct hardware_info current_barosensor_info;
+/* prize modified by gongtaitao for sarsensor hardware info 20221026 start */
+extern struct hardware_info current_sarsensor_info;
+/* prize modified by gongtaitao for sarsensor hardware info 20221026 end */
 #endif
 /* end, prize-lifenfen-20181126, add for sensorhub hardware info */
 
@@ -705,7 +708,7 @@ static void mtk_nanohub_init_sensor_info(void)
 
 	p = &sensor_state[SENSOR_TYPE_OIS];
 	p->sensorType = SENSOR_TYPE_OIS;
-	p->gain = 1000000;
+	p->gain = 100000;
 	strlcpy(p->name, "ois", sizeof(p->name));
 	strlcpy(p->vendor, "mtk", sizeof(p->vendor));
 
@@ -1650,6 +1653,16 @@ int mtk_nanohub_set_cmd_to_hub(uint8_t sensor_id,
 			len = offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ,
 				custData) + sizeof(req.set_cust_req.getInfo);
 			break;
+		/* prize modified by gongtaitao for sarsensor hardware info 20221026 start */
+		#ifdef CONFIG_SENSORHUB_PRIZE_HARDWARE_INFO
+		case CUST_ACTION_GET_PRIZE_HARDWARE_INFO:
+			req.set_cust_req.gethardwareInfo.action =
+				CUST_ACTION_GET_PRIZE_HARDWARE_INFO;
+			len = offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ, custData)
+				+ sizeof(req.set_cust_req.gethardwareInfo);
+			break;			
+		/* prize modified by gongtaitao for sarsensor hardware info 20221026 end */
+		#endif
 		default:
 			return -1;
 		}
@@ -1846,6 +1859,14 @@ static void sensorHub_get_hardware_info(void)
 			strlcpy(current_barosensor_info.id, info.id, sizeof(current_alsps_info.id));
 			strlcpy(current_barosensor_info.more, info.more, sizeof(current_alsps_info.more));
 			break;
+			/* prize modified by gongtaitao for sarsensor hardware info 20221026 start */
+			case ID_SAR:
+			strlcpy(current_sarsensor_info.chip, info.chip, sizeof(current_sarsensor_info.chip));
+			strlcpy(current_sarsensor_info.vendor, info.vendor, sizeof(current_sarsensor_info.vendor));
+			strlcpy(current_sarsensor_info.id, info.id, sizeof(current_sarsensor_info.id));
+			strlcpy(current_sarsensor_info.more, info.more, sizeof(current_sarsensor_info.more));
+			break;
+			/* prize modified by gongtaitao for sarsensor hardware info 20221026 end */
 		 #endif
 			default:
 			break;

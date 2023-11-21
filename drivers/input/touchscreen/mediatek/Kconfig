@@ -256,3 +256,25 @@ config TOUCHSCREEN_ILITEK9882_SPI
           To compile this driver as a module, choose M here: the
           module will be called ILITEK9882.
 # prize add end 
+
+config TOUCHSCREEN_HYNITRON
+	bool "hynitron touchscreen"
+	help
+	  Say Y here if you have a hynitron series touch controller
+	  to your system.
+
+	  If build module, say M.
+	  If unsure, say N.
+source "drivers/input/touchscreen/mediatek/hynitron/Kconfig"
+
+#prize added by chenjiaxi, add tlsc6x drivers, 20220408-start
+config TOUCHSCREEN_TLSC6X
+	bool "tlsc6x touchscreen"
+	help
+	  Say Y here if you have a tlsc6x series touch controller
+	  to your system.
+
+	  If build module, say M.
+	  If unsure, say N.
+source "drivers/input/touchscreen/mediatek/tlsc6x/Kconfig"
+#prize added by chenjiaxi, add tlsc6x drivers, 20220408-end

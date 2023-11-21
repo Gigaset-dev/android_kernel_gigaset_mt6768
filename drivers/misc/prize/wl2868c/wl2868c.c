@@ -139,7 +139,19 @@ static int wl2868c_read_reg(u8 reg, u8 *val)
     *val = u8RdVal;
     return 0;
 }
+/*prize add by zhuzhengjiang for wl2868c_enable start*/
+int wl2868c_enable(unsigned int enable)
+{
+    pr_debug("wl2868c_enable enable=%d",enable);
 
+    if (!gpio_is_valid(wl2868c_data.en_gpio))
+    {
+        pr_err("no en pin available");
+        return -EINVAL;
+    }
+    return gpio_direction_output(wl2868c_data.en_gpio,enable);
+}
+/*prize add by zhuzhengjiang for wl2868c_enable end*/
 
 /*!
  * wl2868c VOUTPUT
@@ -148,52 +160,57 @@ static int wl2868c_read_reg(u8 reg, u8 *val)
 * @param vol ldo output voltage mv *
  * @return  Error code indicating success or failure
  */
-static int wl2868c_voltage_output(unsigned int ldo_num,unsigned int vol)
+int wl2868c_voltage_output(unsigned int ldo_num,unsigned int vol)
 {
     unsigned int ldo_vout_value = 0;
+    pr_debug("%s:prize add ldo_num:%d vol:%d\n", __func__,ldo_num,vol);
+    //BIT[7-0]:SYS_EN LDO7_EN LDO6_EN LDO5_EN LDO4_EN LDO3_EN LDO2_EN LDO1_EN
     switch(ldo_num)
     {
         case WL2868C_LDO1:
             vol = vol > LDO12_VOUT_MAX ? LDO12_VOUT_MAX : vol;
             ldo_vout_value = (vol-LDO12_voltage_base)/8;
             wl2868c_write_reg(WL2868C_REG_LDO1_VOUT,ldo_vout_value);
-            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0x81);
+            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0xF5); //81
             break;
         case WL2868C_LDO2:
             vol = vol > LDO12_VOUT_MAX ? LDO12_VOUT_MAX : vol;
             ldo_vout_value = (vol-LDO12_voltage_base)/8;
             wl2868c_write_reg(WL2868C_REG_LDO2_VOUT,ldo_vout_value);
-            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0x82);
+            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0xAA); //82
             break;
         case WL2868C_LDO3:
             vol = vol > LDO34567_VOUT_MAX ? LDO12_VOUT_MAX : vol;
             ldo_vout_value = (vol-LDO34567_voltage_base)/8;
             wl2868c_write_reg(WL2868C_REG_LDO3_VOUT,ldo_vout_value);
-            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0x84);
+            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0xF5); //84
             break;
         case WL2868C_LDO4:
             vol = vol > LDO34567_VOUT_MAX ? LDO12_VOUT_MAX : vol;
             ldo_vout_value = (vol-LDO34567_voltage_base)/8;
             wl2868c_write_reg(WL2868C_REG_LDO4_VOUT,ldo_vout_value);
-            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0x88);
+            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0xAA); //88
             break;
         case WL2868C_LDO5:
             vol = vol > LDO34567_VOUT_MAX ? LDO12_VOUT_MAX : vol;
             ldo_vout_value = (vol-LDO34567_voltage_base)/8;
             wl2868c_write_reg(WL2868C_REG_LDO5_VOUT,ldo_vout_value);
-            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0x90);
+            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0xF5); //90
             break;
         case WL2868C_LDO6:
             vol = vol > LDO34567_VOUT_MAX ? LDO12_VOUT_MAX : vol;
             ldo_vout_value = (vol-LDO34567_voltage_base)/8;
             wl2868c_write_reg(WL2868C_REG_LDO6_VOUT,ldo_vout_value);
-            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0xa0);
+            if(vol)
+                wl2868c_write_reg(WL2868C_REG_LDOX_EN,0xA0); //a0
+            else
+                wl2868c_write_reg(WL2868C_REG_LDOX_EN,0x00); //a0
             break;
         case WL2868C_LDO7:
             vol = vol > LDO34567_VOUT_MAX ? LDO12_VOUT_MAX : vol;
             ldo_vout_value = (vol-LDO34567_voltage_base)/8;
             wl2868c_write_reg(WL2868C_REG_LDO7_VOUT,ldo_vout_value);
-            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0xc0);
+            wl2868c_write_reg(WL2868C_REG_LDOX_EN,0xF5);
             break;
         default:
             return -1;
@@ -346,7 +363,7 @@ static int wl2868c_init_dev(struct device *dev)
         return ret;
     }
 
-    wl2868c_voltage_output(WL2868C_LDO1,1300); // LDO1 output 1300mv
+    //wl2868c_voltage_output(WL2868C_LDO1,1300); // LDO1 output 1300mv
     // wl2868c_voltage_output(WL2868C_LDO2,1100); // LDO2 output 1100mv
     // wl2868c_voltage_output(WL2868C_LDO3,2500); // LDO3 output 2500mv
     // wl2868c_voltage_output(WL2868C_LDO4,3000); // LDO4 output 3000mv

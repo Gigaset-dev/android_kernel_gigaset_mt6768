@@ -3048,7 +3048,7 @@ static bool __dv2_check_ibatocp(struct dv2_algo_info *info,
 	int ret, ibat;
 	struct dv2_algo_data *data = info->data;
 	u32 ibatocp;
-	#define IBAT_ILI_MAX (10000)
+
 	if (!data->is_dvchg_en[DV2_DVCHG_MASTER])
 		return true;
 	ibatocp =  __dv2_get_ibatocp(info, data->ita_setting);
@@ -3058,12 +3058,6 @@ static bool __dv2_check_ibatocp(struct dv2_algo_info *info,
 		return false;
 	}
 	PCA_INFO("ibat(%dmA), ibatocp(%dmA)\n", ibat, ibatocp);
-	/*prize modified by lvyuanchuan for ibat ocp,20221013 ,start*/
-	if(ibat > IBAT_ILI_MAX){
-		PCA_INFO("Skip ibatocp checking,during bringup cp\n", ibat, ibatocp);
-		return true;
-	}
-	/*prize modified by lvyuanchuan for ibat ocp,20221013 ,end*/
 	if (ibat > ibatocp) {
 		PCA_ERR("ibat(%dmA) > ibatocp(%dmA)\n", ibat, ibatocp);
 		return false;

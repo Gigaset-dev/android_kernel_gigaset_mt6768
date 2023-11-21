@@ -52,6 +52,19 @@
 #include "../../codecs/aw883xx/aw883xx.h"
 #endif
 /* prize modified by pzp, add awinic smartpa aw883xx, 20220316 end */
+
+/* prize added by hanjiuping for awinic aw88394 smartPA v1.3.0 start */
+#ifdef CONFIG_SND_SMARTPA_AW883XX_V1_3_0
+#include "../../codecs/aw883xx_v1_3_0/aw883xx.h"
+#endif
+/* prize added by hanjiuping for awinic aw88394 smartPA v1.3.0 end */
+
+/* prize added by hanjiuping for foursemi fs1599N pa support start */
+#if defined(CONFIG_SND_SOC_FS1599)
+#include "fsm_public.h"
+#endif
+/* prize added by hanjiuping for foursemi fs1599N pa support end */
+
 /* prize modified by lifenfen, add awinic smartpa aw8898, 20200103 end */
 /* prize modified by wyq, add awinic smartpa aw881xx, 20200103 begin */
 #ifdef CONFIG_SND_SMARTPA_AW881XX
@@ -68,6 +81,12 @@ static unsigned int mtk_spk_type;
 static int mtk_spk_i2s_out, mtk_spk_i2s_in;
 static struct mtk_spk_i2c_ctrl mtk_spk_list[MTK_SPK_TYPE_NUM] = {
 	[MTK_SPK_NOT_SMARTPA] = {
+/* prize added by hanjiuping for foursemi fs1599N pa support start */
+#if defined(CONFIG_SND_SOC_FS1599)
+		.i2c_probe  = exfsm_i2c_probe,
+		.i2c_remove = exfsm_i2c_remove,
+#endif
+/* prize added by hanjiuping for foursemi fs1599N pa support end */
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
 	},
@@ -115,14 +134,14 @@ static struct mtk_spk_i2c_ctrl mtk_spk_list[MTK_SPK_TYPE_NUM] = {
         },
 #endif /* CONFIG_SND_SOC_AW8898 */
 /* prize modified by pzp, add awinic smartpa aw883xx, 20220316 begin */
-#ifdef CONFIG_SND_SMARTPA_AW883XX
+#if defined(CONFIG_SND_SMARTPA_AW883XX) || defined(CONFIG_SND_SMARTPA_AW883XX_V1_3_0)
         [MTK_SPK_AWINIC_AW883XX] = {
                 .i2c_probe = aw883xx_i2c_probe,
                 .i2c_remove = aw883xx_i2c_remove,
                 .codec_dai_name = "aw883xx-aif-3-34",
                 .codec_name = "aw883xx_smartpa.3-0034",
         },
-#endif 
+#endif
 /* prize modified by pzp, add awinic smartpa aw883xx, 20220316 end */
 /* prize modified by lifenfen, add awinic smartpa aw8898, 20200103 end */
 /* prize modified by wyq, add awinic smartpa aw881xx, 20200103 begin */
@@ -564,6 +583,7 @@ EXPORT_SYMBOL(mtk_spk_recv_ipi_buf_from_dsp);
 
 static const struct i2c_device_id mtk_spk_i2c_id[] = {
 	{ "tfa98xx", 0},
+	{ "aw883xx_smartpa", 0},
 	{ "speaker_amp", 0},
 	{}
 };
@@ -572,6 +592,7 @@ MODULE_DEVICE_TABLE(i2c, mtk_spk_i2c_id);
 #ifdef CONFIG_OF
 static const struct of_device_id mtk_spk_match_table[] = {
 	{.compatible = "nxp,tfa98xx",},
+	{.compatible = "awinic,aw883xx_smartpa",},
 	{.compatible = "mediatek,speaker_amp",},
 	{},
 };

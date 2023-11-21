@@ -2077,7 +2077,7 @@ void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 	ufshcd_add_command_trace(hba, task_tag, "send");
 	ufshcd_clk_scaling_start_busy(hba);
 
-	if ((hba->quirks & UFS_MTK_HOST_QUIRK_UFS_HCI_PERF_HEURISTIC) &&
+	if (ufshcd_vops_has_ufshci_perf_heuristic(hba) &&
 		hba->ufs_mtk_qcmd_r_cmd_cnt) {
 		bool timeout = false;
 		ktime_t start;
@@ -2114,7 +2114,7 @@ void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 	wmb();
 
 
-	if ((hba->quirks & UFS_MTK_HOST_QUIRK_UFS_HCI_PERF_HEURISTIC) &&
+	if (ufshcd_vops_has_ufshci_perf_heuristic(hba) &&
 	    hba->ufs_mtk_qcmd_r_cmd_cnt)
 		udelay(1);
 }
@@ -7490,7 +7490,7 @@ static int ufshcd_quirk_tune_host_pa_tactivate(struct ufs_hba *hba)
 	peer_pa_tactivate_us = peer_pa_tactivate *
 			     gran_to_us_table[peer_granularity - 1];
 
-	if (pa_tactivate_us > peer_pa_tactivate_us) {
+	if (pa_tactivate_us >= peer_pa_tactivate_us) {
 		u32 new_peer_pa_tactivate;
 
 		new_peer_pa_tactivate = pa_tactivate_us /

@@ -43,7 +43,7 @@
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-extern int curr_sensor_id;
+//extern int curr_sensor_id;
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = SC201CSMACROMIPI_SENSOR_ID,
 	.checksum_value = 0x8bb8002f,
@@ -961,11 +961,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
-	if(curr_sensor_id  != 2) {
-		printk("curr sensor idx mismatch physics camera ,so return error");
-		*sensor_id = 0xFFFFFFFF;
-		return ERROR_SENSOR_CONNECT_FAIL;
-	}
+	// if(curr_sensor_id  != 2) {
+		// printk("curr sensor idx mismatch physics camera ,so return error");
+		// *sensor_id = 0xFFFFFFFF;
+		// return ERROR_SENSOR_CONNECT_FAIL;
+	// }
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
@@ -997,10 +997,10 @@ static kal_uint32 open(void)
 	kal_uint32 sensor_id = 0;
 
 	LOG_1;
-	if(curr_sensor_id  != 2) {
-		printk("curr sensor idx mismatch physics camera ,so return error");
-		return ERROR_SENSOR_CONNECT_FAIL;
-	}
+	// if(curr_sensor_id  != 2) {
+		// printk("curr sensor idx mismatch physics camera ,so return error");
+		// return ERROR_SENSOR_CONNECT_FAIL;
+	// }
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];

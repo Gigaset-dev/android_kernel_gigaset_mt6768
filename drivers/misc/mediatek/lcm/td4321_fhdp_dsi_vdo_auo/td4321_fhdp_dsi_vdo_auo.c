@@ -81,6 +81,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 /* --------------------------------------------------------------------------- */
 /* Local Variables */
 /* --------------------------------------------------------------------------- */
+extern int gesture_value;
 
 struct LCM_setting_table {
 	unsigned int cmd;
@@ -450,11 +451,18 @@ static void lcm_init(void)
 
 static void lcm_suspend(void)
 {
-	push_table(lcm_suspend_setting,sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);     
-	display_bias_disable();
-	MDELAY(10);
-	SET_RESET_PIN(0);
-	MDELAY(10);  
+	push_table(lcm_suspend_setting,sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1); 
+	if (gesture_value) {
+		//display_bias_disable();
+		//MDELAY(10);
+		SET_RESET_PIN(1);
+		MDELAY(10);  
+	} else {
+		display_bias_disable();
+		MDELAY(10);
+		SET_RESET_PIN(0);
+		MDELAY(10); 		
+	}
 }
 
 static void lcm_resume(void)
@@ -469,7 +477,7 @@ static void lcm_init_power(void)
 
 static void lcm_suspend_power(void)
 {
-	display_bias_disable();
+	//display_bias_disable();
 }
 
 static void lcm_resume_power(void)

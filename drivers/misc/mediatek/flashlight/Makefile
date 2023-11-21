@@ -23,6 +23,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_AW36515)      += flashlights-aw36515.o
 # prize add by linchong 20220111 start
 obj-$(CONFIG_MTK_FLASHLIGHT_AW36518)      += flashlights-aw36518.o
 # prize add by linchong 20220111 start
+obj-$(CONFIG_MTK_FLASHLIGHT_OCP81375)    += flashlights-ocp81375.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY)       += flashlights-dummy.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
 #/* prize add by zhuzhengjiang for flash ocp8111a 20211223 start*/
@@ -31,6 +32,10 @@ obj-$(CONFIG_MTK_FLASHLIGHT_OCP8111A_GPIO)  += flashlights-ocp8111a-gpio.o
 #/* prize add by zhuzhengjiang for flash aw3641e 20201224 start*/
 obj-$(CONFIG_MTK_FLASHLIGHT_AW3641E_GPIO)  += flashlights-aw3641e-gpio.o
 #/* prize add by zhuzhengjiang for flash aw3641e 20201224 end*/
+#/*prize add by zhuzhengjiang for IR FLASH aw36515 start*/
+obj-$(CONFIG_MTK_FLASHLIGHT_IR_AW36515)     += flashlights-ir-aw36515.o
+#/*prize add by zhuzhengjiang for IR FLASH aw36515 end*/
+
 
 ccflags-$(CONFIG_MTK_FLASHLIGHT_DEBUG)     := -DDEBUG
 ccflags-$(CONFIG_MTK_FLASHLIGHT_SYWT78)    += -DCONFIG_MTK_FLASHLIGHT_SYWT78
@@ -59,5 +64,6 @@ obj-$(CONFIG_MTK_FLASHLIGHT_AW36515B)     += flashlights-aw36515b.o
 #prize add by lipengpeng 20210208 end 
 obj-$(CONFIG_MTK_FLASHLIGHT_AW36515IR)     += flashlights-aw36515ir.o
 ###prize
+obj-$(CONFIG_MTK_FLASHLIGHT_SGM3758)      += flashlights-sgm3758-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_AW3641_GPIO)     += flashlights-aw3641-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_ISINK)     += flashlights-isink.o

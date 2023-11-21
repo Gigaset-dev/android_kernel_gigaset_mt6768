@@ -172,7 +172,7 @@ struct vow_dump_info_t {
 	uint32_t      size;               // size of reseved buffer (bytes)
 	uint32_t      scp_dump_offset[VOW_MAX_CH_NUM]; // return data offset from scp
 	uint32_t      scp_dump_size[VOW_MAX_CH_NUM];   // return data size from scp
-	short         *kernel_dump_addr;  // kernel internal buffer address
+	char         *kernel_dump_addr;  // kernel internal buffer address
 	unsigned int  kernel_dump_idx;    // current index of kernel_dump_addr
 	unsigned int  kernel_dump_size;   // size of kernel_dump_ptr buffer (bytes)
 	unsigned long user_dump_addr;     // addr of user dump buffer
@@ -454,7 +454,7 @@ static void vow_service_Init(void)
 {
 	int I;
 	bool ret;
-	unsigned int vow_ipi_buf[3];
+	unsigned int vow_ipi_buf[4];
 
 	VOWDRV_DEBUG("%s():%x\n", __func__, init_flag);
 	/* common part */
@@ -516,6 +516,8 @@ static void vow_service_Init(void)
 		spin_unlock(&vowdrv_lock);
 		vowserv.force_phase_stage = NO_FORCE;
 		vowserv.swip_log_enable = true;
+		memset((void *)&vowserv.vow_eint_data_struct, 0,
+					sizeof(vowserv.vow_eint_data_struct));
 		vowserv.voicedata_user_addr = 0;
 		vowserv.voicedata_user_size = 0;
 		vowserv.voicedata_user_return_size_addr = 0;
@@ -1391,7 +1393,7 @@ static void vow_service_GetVowDumpData(void)
 					size = temp_dump_info.scp_dump_size[0] * 2;
 				}
 				vow_interleaving(
-					&temp_dump_info.kernel_dump_addr[idx],
+					(short *)(&temp_dump_info.kernel_dump_addr[idx]),
 					(short *)(temp_dump_info.vir_addr +
 						temp_dump_info.scp_dump_offset[0]),
 					(short *)(temp_dump_info.vir_addr +
@@ -1461,8 +1463,10 @@ static void vow_service_GetVowDumpData(void)
 					   size_left);
 				mutex_unlock(&vow_vmalloc_lock);
 				temp_dump_info.kernel_dump_idx = size_left;
-			} else
+			} else {
 				temp_dump_info.kernel_dump_idx = 0;
+				temp_dump_info.user_dump_idx = 0;
+			}
 			spin_lock_irqsave(&vowdrv_dump_lock, flags);
 			vow_dump_info[i].kernel_dump_idx = temp_dump_info.kernel_dump_idx;
 			vow_dump_info[i].user_dump_idx = temp_dump_info.user_dump_idx;
@@ -2815,6 +2819,9 @@ static ssize_t VowDrv_read(struct file *fp,
 	} else {
 		vowserv.scp_command_id = vowserv.vow_speaker_model[slot].id;
 	}
+
+	memset((void *)&vowserv.vow_eint_data_struct, 0,
+					sizeof(vowserv.vow_eint_data_struct));
 	vowserv.vow_eint_data_struct.id = vowserv.scp_command_id;
 	vowserv.vow_eint_data_struct.eint_status = VowDrv_QueryVowEINTStatus();
 	vowserv.vow_eint_data_struct.data[0] = (char)vowserv.confidence_level;
@@ -2827,10 +2834,16 @@ static ssize_t VowDrv_read(struct file *fp,
 
 		dsp_inform_tx_flag = false;
 
-		if (vowserv.extradata_mem_ptr == NULL)
+		mutex_lock(&vow_extradata_mutex);
+		if (vowserv.extradata_mem_ptr == NULL) {
+			mutex_unlock(&vow_extradata_mutex);
 			goto exit;
-		if (vowserv.extradata_ptr == NULL)
+		}
+		if (vowserv.extradata_ptr == NULL) {
+			mutex_unlock(&vow_extradata_mutex);
 			goto exit;
+		}
+		mutex_unlock(&vow_extradata_mutex);
 		if (vowserv.vow_speaker_model[slot].rx_inform_size_addr == 0)
 			goto exit;
 		if (vowserv.vow_speaker_model[slot].rx_inform_addr == 0)

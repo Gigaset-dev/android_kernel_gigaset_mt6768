@@ -54,11 +54,16 @@
 //#define GC0310_SENSOR_ID	0xA310
 #define GC2145_SENSOR_ID	0x2145
 #define GC6153_SENSOR_ID	0x6153//yanrenjie added 6153 20190416
+#define GC02M1B_SENSOR_ID	0x02E0
+#define GC2375H_SENSOR_ID	0x2375
+
 
 #define GC6133_SERIAL_ADDR	0x40
 #define GC0310_SERIAL_ADDR	0x21
 #define GC2145_SERIAL_ADDR	0x3C
 #define GC6153_SERIAL_ADDR	0x40//yanrenjie added 6153 20190416
+#define GC02M1B_SERIAL_ADDR	0x10
+#define GC2375H_SERIAL_ADDR	0x37
 //prize  add  for gc6133/gc0310/gc2145 by zhuzhengjiang    20190116-end
 #define CAMERA_DEBUG
 #ifdef CAMERA_DEBUG
@@ -77,6 +82,7 @@ struct dcam_data_t{
 	unsigned int sensor_type;
 	unsigned int pdn_pin;
 	unsigned int rst_pin;
+	unsigned int avdd_pin;
 };
 
 static struct dcam_data_t dcam_r_devtype = {
@@ -85,6 +91,7 @@ static struct dcam_data_t dcam_r_devtype = {
 	.sensor_type = 0,
 	.pdn_pin = 0,
 	.rst_pin = 0,
+	.avdd_pin = 0,
 };
 static struct dcam_data_t dcam_r1_devtype = {
 	.name = "rear1",
@@ -157,6 +164,45 @@ int kdCISModulePowerOn(struct i2c_client* client,  bool On)
 			gpio_direction_output(dcam_data->pdn_pin,1);
 		}
 	}
+	else if(client->addr == GC02M1B_SERIAL_ADDR) 
+	{
+	//GC02M1B
+		if (On){
+			//set_avdd_regulator(1);
+			gpio_direction_output(dcam_data->avdd_pin,1);
+			mdelay(5);
+			gpio_direction_output(dcam_data->pdn_pin,1);
+		}else{
+			//set_avdd_regulator(0);
+			mdelay(5);
+			gpio_direction_output(dcam_data->pdn_pin,0);
+			gpio_direction_output(dcam_data->pdn_pin,0);
+		}
+	}
+	else if(client->addr == GC2375H_SERIAL_ADDR) 
+	{
+		if (On){
+			gpio_direction_output(dcam_data->rst_pin,0);
+			mdelay(5);
+			gpio_direction_output(dcam_data->pdn_pin,1);
+			mdelay(5);
+			gpio_direction_output(dcam_data->avdd_pin,1);
+			mdelay(5);
+			gpio_direction_output(dcam_data->pdn_pin,0);
+			mdelay(5);
+			gpio_direction_output(dcam_data->rst_pin,1);
+
+		}else{
+			gpio_direction_output(dcam_data->pdn_pin,1);
+			mdelay(5);
+			gpio_direction_output(dcam_data->rst_pin,0);
+			mdelay(5);
+			gpio_direction_output(dcam_data->avdd_pin,0);
+			mdelay(10);
+			gpio_direction_output(dcam_data->pdn_pin,0);
+		}
+	}
+
 	else
 	{
 	//gc0310
@@ -259,14 +305,378 @@ static void CameraStreamOn(struct i2c_client *client)
 		client->addr = GC0310_SERIAL_ADDR;
 	else if(sensor_id == GC6153_SENSOR_ID)//prize yanrenjie added 6153 20190416
 		client->addr = GC6153_SERIAL_ADDR;	
+	else if(sensor_id == GC02M1B_SENSOR_ID)
+		client->addr = GC02M1B_SERIAL_ADDR;
+	else if(sensor_id == GC2375H_SENSOR_ID)
+		client->addr = GC2375H_SERIAL_ADDR;	
 	else
 		client->addr = 0x3c;
-
-    write_cmos_sensor(client,0xfe,0x03);
-    write_cmos_sensor(client,0x10,0x94);
-    write_cmos_sensor(client,0xfe,0x00);
+	if(sensor_id == GC02M1B_SENSOR_ID)
+	{
+		write_cmos_sensor(client,0xfe, 0x00);
+		write_cmos_sensor(client,0x3e, 0x90);
+	}
+	else if(sensor_id == GC2375H_SENSOR_ID)
+	{
+		write_cmos_sensor(client,0xFE, 0X00);
+		write_cmos_sensor(client,0xEF, 0X90);
+		write_cmos_sensor(client,0xFE, 0X00);
+	}
+	else {
+		write_cmos_sensor(client,0xfe,0x03);
+		write_cmos_sensor(client,0x10,0x94);
+		write_cmos_sensor(client,0xfe,0x00);
+	}
     //msleep(50);
 }
+static void GC02M1B_Sensor_Init(struct i2c_client *client)
+{
+	/*system*/
+	write_cmos_sensor(client,0xfc, 0x01);
+	write_cmos_sensor(client,0xf4, 0x41);
+	write_cmos_sensor(client,0xf5, 0xe3); // c0->e3 For Y1&Y6
+	write_cmos_sensor(client,0xf6, 0x44);
+	write_cmos_sensor(client,0xf8, 0x38);
+	write_cmos_sensor(client,0xf9, 0x82);
+	write_cmos_sensor(client,0xfa, 0x00);
+	write_cmos_sensor(client,0xfd, 0x80);
+	write_cmos_sensor(client,0xfc, 0x81);
+	write_cmos_sensor(client,0xfe, 0x03);
+	write_cmos_sensor(client,0x01, 0x0b);
+	write_cmos_sensor(client,0xf7, 0x01);
+	write_cmos_sensor(client,0xfc, 0x80);
+	write_cmos_sensor(client,0xfc, 0x80);
+	write_cmos_sensor(client,0xfc, 0x80);
+	write_cmos_sensor(client,0xfc, 0x8e);
+
+	/*CISCTL*/
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0x87, 0x09);
+	write_cmos_sensor(client,0xee, 0x72);
+	write_cmos_sensor(client,0xfe, 0x01);
+	write_cmos_sensor(client,0x8c, 0x90);
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0x90, 0x00);
+	write_cmos_sensor(client,0x03, 0x04);
+	write_cmos_sensor(client,0x04, 0x7d);
+	write_cmos_sensor(client,0x41, 0x04);
+	write_cmos_sensor(client,0x42, 0xf4);
+	write_cmos_sensor(client,0x05, 0x04);
+	write_cmos_sensor(client,0x06, 0x48);
+	write_cmos_sensor(client,0x07, 0x00);
+	write_cmos_sensor(client,0x08, 0x18);
+	write_cmos_sensor(client,0x9d, 0x18);
+	write_cmos_sensor(client,0x09, 0x00);
+	write_cmos_sensor(client,0x0a, 0x02);
+	write_cmos_sensor(client,0x0d, 0x04);
+	write_cmos_sensor(client,0x0e, 0xbc);
+	write_cmos_sensor(client,0x17, 0x80);
+	write_cmos_sensor(client,0x19, 0x04);
+	write_cmos_sensor(client,0x24, 0x00);
+	write_cmos_sensor(client,0x56, 0x20);
+	write_cmos_sensor(client,0x5b, 0x00);
+	write_cmos_sensor(client,0x5e, 0x01);
+
+	/*analog Register width*/
+	write_cmos_sensor(client,0x21, 0x3c);
+	write_cmos_sensor(client,0x44, 0x20);
+	write_cmos_sensor(client,0xcc, 0x01);
+
+	/*analog mode*/
+	write_cmos_sensor(client,0x1a, 0x04);
+	write_cmos_sensor(client,0x1f, 0x11);
+	write_cmos_sensor(client,0x27, 0x30);
+	write_cmos_sensor(client,0x2b, 0x00);
+	write_cmos_sensor(client,0x33, 0x00);
+	write_cmos_sensor(client,0x53, 0x90);
+	write_cmos_sensor(client,0xe6, 0x50);
+
+	/*analog voltage*/
+	write_cmos_sensor(client,0x39, 0x07);
+	write_cmos_sensor(client,0x43, 0x04);
+	write_cmos_sensor(client,0x46, 0x4a);  // 2a->4a For Y1&Y6
+	write_cmos_sensor(client,0x7c, 0xa0);
+	write_cmos_sensor(client,0xd0, 0xbe);
+	write_cmos_sensor(client,0xd1, 0x60);
+	write_cmos_sensor(client,0xd2, 0x40);
+	write_cmos_sensor(client,0xd3, 0xf3);
+	write_cmos_sensor(client,0xde, 0x1d);
+
+	/*analog current*/
+	write_cmos_sensor(client,0xcd, 0x05);
+	write_cmos_sensor(client,0xce, 0x6f);
+
+	/*CISCTL RESET*/
+	write_cmos_sensor(client,0xfc, 0x88);
+	write_cmos_sensor(client,0xfe, 0x10);
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0xfc, 0x8e);
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0xfc, 0x88);
+	write_cmos_sensor(client,0xfe, 0x10);
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0xfc, 0x8e);
+	write_cmos_sensor(client,0xfe, 0x04);
+	write_cmos_sensor(client,0xe0, 0x01);
+	write_cmos_sensor(client,0xfe, 0x00);
+
+	/*ISP*/
+	write_cmos_sensor(client,0xfe, 0x01);
+	write_cmos_sensor(client,0x53, 0x54);  // 44->54 For Y1&Y6
+	write_cmos_sensor(client,0x87, 0x53);
+	write_cmos_sensor(client,0x89, 0x03);
+
+	/*Gain*/
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0xb0, 0x74);
+	write_cmos_sensor(client,0xb1, 0x04);
+	write_cmos_sensor(client,0xb2, 0x00);
+	write_cmos_sensor(client,0xb6, 0x00);
+	write_cmos_sensor(client,0xfe, 0x04);
+	write_cmos_sensor(client,0xd8, 0x00);
+	write_cmos_sensor(client,0xc0, 0x40);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0x60);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0xc0);
+	write_cmos_sensor(client,0xc0, 0x2a);
+	write_cmos_sensor(client,0xc0, 0x80);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0x40);
+	write_cmos_sensor(client,0xc0, 0xa0);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0x90);
+	write_cmos_sensor(client,0xc0, 0x19);
+	write_cmos_sensor(client,0xc0, 0xc0);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0xD0);
+	write_cmos_sensor(client,0xc0, 0x2F);
+	write_cmos_sensor(client,0xc0, 0xe0);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0x90);
+	write_cmos_sensor(client,0xc0, 0x39);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0x01);
+	write_cmos_sensor(client,0xc0, 0x20);
+	write_cmos_sensor(client,0xc0, 0x04);
+	write_cmos_sensor(client,0xc0, 0x20);
+	write_cmos_sensor(client,0xc0, 0x01);
+	write_cmos_sensor(client,0xc0, 0xe0);
+	write_cmos_sensor(client,0xc0, 0x0f);
+	write_cmos_sensor(client,0xc0, 0x40);
+	write_cmos_sensor(client,0xc0, 0x01);
+	write_cmos_sensor(client,0xc0, 0xe0);
+	write_cmos_sensor(client,0xc0, 0x1a);
+	write_cmos_sensor(client,0xc0, 0x60);
+	write_cmos_sensor(client,0xc0, 0x01);
+	write_cmos_sensor(client,0xc0, 0x20);
+	write_cmos_sensor(client,0xc0, 0x25);
+	write_cmos_sensor(client,0xc0, 0x80);
+	write_cmos_sensor(client,0xc0, 0x01);
+	write_cmos_sensor(client,0xc0, 0xa0);
+	write_cmos_sensor(client,0xc0, 0x2c);
+	write_cmos_sensor(client,0xc0, 0xa0);
+	write_cmos_sensor(client,0xc0, 0x01);
+	write_cmos_sensor(client,0xc0, 0xe0);
+	write_cmos_sensor(client,0xc0, 0x32);
+	write_cmos_sensor(client,0xc0, 0xc0);
+	write_cmos_sensor(client,0xc0, 0x01);
+	write_cmos_sensor(client,0xc0, 0x20);
+	write_cmos_sensor(client,0xc0, 0x38);
+	write_cmos_sensor(client,0xc0, 0xe0);
+	write_cmos_sensor(client,0xc0, 0x01);
+	write_cmos_sensor(client,0xc0, 0x60);
+	write_cmos_sensor(client,0xc0, 0x3c);
+	write_cmos_sensor(client,0xc0, 0x00);
+	write_cmos_sensor(client,0xc0, 0x02);
+	write_cmos_sensor(client,0xc0, 0xa0);
+	write_cmos_sensor(client,0xc0, 0x40);
+	write_cmos_sensor(client,0xc0, 0x80);
+	write_cmos_sensor(client,0xc0, 0x02);
+	write_cmos_sensor(client,0xc0, 0x18);
+	write_cmos_sensor(client,0xc0, 0x5c);
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0x9f, 0x10);
+
+	/*BLK*/
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0x26, 0x20);
+	write_cmos_sensor(client,0xfe, 0x01);
+	write_cmos_sensor(client,0x40, 0x22);
+	write_cmos_sensor(client,0x46, 0x7f);
+	write_cmos_sensor(client,0x49, 0x0f);
+	write_cmos_sensor(client,0x4a, 0xf0);
+	write_cmos_sensor(client,0xfe, 0x04);
+	write_cmos_sensor(client,0x14, 0x80);
+	write_cmos_sensor(client,0x15, 0x80);
+	write_cmos_sensor(client,0x16, 0x80);
+	write_cmos_sensor(client,0x17, 0x80);
+
+	/*ant _blooming*/
+	write_cmos_sensor(client,0xfe, 0x01);
+	write_cmos_sensor(client,0x41, 0x20);
+	write_cmos_sensor(client,0x4c, 0x00);
+	write_cmos_sensor(client,0x4d, 0x0c);
+	write_cmos_sensor(client,0x44, 0x08);
+	write_cmos_sensor(client,0x48, 0x03);
+
+	/*Window 1600X1200*/
+	write_cmos_sensor(client,0xfe, 0x01);
+	write_cmos_sensor(client,0x90, 0x01);
+	write_cmos_sensor(client,0x91, 0x00);
+	write_cmos_sensor(client,0x92, 0x06);
+	write_cmos_sensor(client,0x93, 0x00);
+	write_cmos_sensor(client,0x94, 0x06);
+	write_cmos_sensor(client,0x95, 0x04);
+	write_cmos_sensor(client,0x96, 0xb0);
+	write_cmos_sensor(client,0x97, 0x06);
+	write_cmos_sensor(client,0x98, 0x40);
+
+	/*mipi*/
+	write_cmos_sensor(client,0xfe, 0x03);
+	write_cmos_sensor(client,0x01, 0x23);
+	write_cmos_sensor(client,0x03, 0xce);
+	write_cmos_sensor(client,0x04, 0x48);
+	write_cmos_sensor(client,0x15, 0x00);
+	write_cmos_sensor(client,0x21, 0x10);
+	write_cmos_sensor(client,0x22, 0x05);
+	write_cmos_sensor(client,0x23, 0x20);
+	write_cmos_sensor(client,0x25, 0x20);
+	write_cmos_sensor(client,0x26, 0x08);
+	write_cmos_sensor(client,0x29, 0x06);
+	write_cmos_sensor(client,0x2a, 0x0a);
+	write_cmos_sensor(client,0x2b, 0x08);
+
+	/*out*/
+	write_cmos_sensor(client,0xfe, 0x01);
+	write_cmos_sensor(client,0x8c, 0x10);
+	write_cmos_sensor(client,0xfe, 0x00);
+	write_cmos_sensor(client,0x3e, 0x00);
+};
+
+static void GC2375H_Sensor_Init(struct i2c_client *client)
+{
+	write_cmos_sensor(client,0xfe,0x00);
+	write_cmos_sensor(client,0xfe,0x00);
+	write_cmos_sensor(client,0xfe,0x00);
+	write_cmos_sensor(client,0xf7,0x01);
+	write_cmos_sensor(client,0xf8,0x0c);
+	write_cmos_sensor(client,0xf9,0x42);
+	write_cmos_sensor(client,0xfa,0x88);
+	write_cmos_sensor(client,0xfc,0x8e);
+	write_cmos_sensor(client,0xfe,0x00);
+	write_cmos_sensor(client,0x88,0x03);                      
+
+	/*Analog*/                                    
+	write_cmos_sensor(client,0x03,0x04);
+	write_cmos_sensor(client,0x04,0x65);
+	write_cmos_sensor(client,0x05,0x02);
+	write_cmos_sensor(client,0x06,0x5a);
+	write_cmos_sensor(client,0x07,0x00);
+	write_cmos_sensor(client,0x08,0x10);
+	write_cmos_sensor(client,0x09,0x00);
+	write_cmos_sensor(client,0x0a,0x04); 
+	write_cmos_sensor(client,0x0b,0x00);
+	write_cmos_sensor(client,0x0c,0x14);
+	write_cmos_sensor(client,0x0d,0x04);
+	write_cmos_sensor(client,0x0e,0xb8);
+	write_cmos_sensor(client,0x0f,0x06);
+	write_cmos_sensor(client,0x10,0x48);
+	write_cmos_sensor(client,0x17,0xd7);
+	write_cmos_sensor(client,0x1c,0x10);
+	write_cmos_sensor(client,0x1d,0x13);
+	write_cmos_sensor(client,0x20,0x0b);
+	write_cmos_sensor(client,0x21,0x6d);	
+	write_cmos_sensor(client,0x22,0x0c);
+	write_cmos_sensor(client,0x25,0xc1);
+	write_cmos_sensor(client,0x26,0x0e);
+	write_cmos_sensor(client,0x27,0x22);
+	write_cmos_sensor(client,0x29,0x5f);
+	write_cmos_sensor(client,0x2b,0x88);
+	write_cmos_sensor(client,0x2f,0x12);
+	write_cmos_sensor(client,0x38,0x86);
+	write_cmos_sensor(client,0x3d,0x00);
+	write_cmos_sensor(client,0xcd,0xa3);
+	write_cmos_sensor(client,0xce,0x57);
+	write_cmos_sensor(client,0xd0,0x09);
+	write_cmos_sensor(client,0xd1,0xca);
+	write_cmos_sensor(client,0xd2,0x34);
+	write_cmos_sensor(client,0xd3,0xbb);
+	write_cmos_sensor(client,0xd8,0x60);
+	write_cmos_sensor(client,0xe0,0x08);
+	write_cmos_sensor(client,0xe1,0x1f);
+	write_cmos_sensor(client,0xe4,0xf8);
+	write_cmos_sensor(client,0xe5,0x0c);
+	write_cmos_sensor(client,0xe6,0x10);
+	write_cmos_sensor(client,0xe7,0xcc);
+	write_cmos_sensor(client,0xe8,0x02);
+	write_cmos_sensor(client,0xe9,0x01);
+	write_cmos_sensor(client,0xea,0x02);
+	write_cmos_sensor(client,0xeb,0x01);
+
+	/*Crop*/                                          
+	write_cmos_sensor(client,0x90,0x01); 
+	write_cmos_sensor(client,0x92,0x04);
+	write_cmos_sensor(client,0x94,0x04);
+	write_cmos_sensor(client,0x95,0x04);
+	write_cmos_sensor(client,0x96,0xb0);
+	write_cmos_sensor(client,0x97,0x06);
+	write_cmos_sensor(client,0x98,0x40); 
+
+	/*BLK*/
+	write_cmos_sensor(client,0x18,0x02);
+	write_cmos_sensor(client,0x1a,0x18);
+	write_cmos_sensor(client,0x28,0x00);
+	write_cmos_sensor(client,0x3f,0x40);
+	write_cmos_sensor(client,0x40,0x26);
+	write_cmos_sensor(client,0x41,0x00);
+	write_cmos_sensor(client,0x43,0x03);
+	write_cmos_sensor(client,0x4a,0x00);	
+	write_cmos_sensor(client,0x4e,0x3c);
+	write_cmos_sensor(client,0x4f,0x00);
+	write_cmos_sensor(client,0x66,0xc0);
+	write_cmos_sensor(client,0x67,0x00);	
+
+	/*Dark sun*/                                      
+	write_cmos_sensor(client,0x68,0x00);	
+
+	/*Gain*/                                      
+	write_cmos_sensor(client,0xb0,0x58);
+	write_cmos_sensor(client,0xb1,0x01);
+	write_cmos_sensor(client,0xb2,0x00);	
+	write_cmos_sensor(client,0xb6,0x00);
+
+	/*MIPI*/                                           
+	write_cmos_sensor(client,0xef,0x90);
+	write_cmos_sensor(client,0xfe,0x03);
+	write_cmos_sensor(client,0x01,0x03);
+	write_cmos_sensor(client,0x02,0x33);
+	write_cmos_sensor(client,0x03,0x90);
+	write_cmos_sensor(client,0x04,0x04);
+	write_cmos_sensor(client,0x05,0x00);
+	write_cmos_sensor(client,0x06,0x80);
+	write_cmos_sensor(client,0x11,0x2b);
+	write_cmos_sensor(client,0x12,0xd0);
+	write_cmos_sensor(client,0x13,0x07);
+	write_cmos_sensor(client,0x15,0x00);
+	write_cmos_sensor(client,0x21,0x08);
+	write_cmos_sensor(client,0x22,0x05);
+	write_cmos_sensor(client,0x23,0x13);
+	write_cmos_sensor(client,0x24,0x02);
+	write_cmos_sensor(client,0x25,0x13);
+	write_cmos_sensor(client,0x26,0x08);
+	write_cmos_sensor(client,0x29,0x06);
+	write_cmos_sensor(client,0x2a,0x08);
+	write_cmos_sensor(client,0x2b,0x08); 
+	write_cmos_sensor(client,0xfe,0x00);            
+
+};
 
 static void GC6133_Sensor_Init(struct i2c_client *client)
 {
@@ -1906,6 +2316,44 @@ static UINT32 CameraOpen(struct i2c_client *client)
 			}
 		}
 	}
+	if(!id_status)
+	{
+		for(i=0;i<3;i++)
+		{
+			client->addr = GC2375H_SERIAL_ADDR;
+			kdCISModulePowerOn(client,true);
+			sensor_id=(read_cmos_sensor(client,0xf0) << 8) |(read_cmos_sensor(client,0xf1));
+			CAMERA_DBG("GC02M1B *sensorID=%x %s %d\n",sensor_id,__func__,__LINE__);
+			if(sensor_id != GC2375H_SENSOR_ID)  
+			{
+				CAMERA_DBG("GC2375H mipi Read Sensor ID Fail[open] = 0x%x\n", sensor_id); 
+				//return ERROR_SENSOR_CONNECT_FAIL;
+			}else{
+				g_dcam_r_client->addr = GC2375H_SERIAL_ADDR;							
+				id_status = 1;
+				break;
+			}
+		}
+	}
+	if(!id_status)
+	{
+		for(i=0;i<3;i++)
+		{
+			client->addr = GC02M1B_SERIAL_ADDR;
+			kdCISModulePowerOn(client,true);
+			sensor_id=(read_cmos_sensor(client,0xf0) << 8) |(read_cmos_sensor(client,0xf1));
+			CAMERA_DBG("GC02M1B *sensorID=%x %s %d\n",sensor_id,__func__,__LINE__);
+			if(sensor_id != GC02M1B_SENSOR_ID)  
+			{
+				CAMERA_DBG("GC02M1B mipi Read Sensor ID Fail[open] = 0x%x\n", sensor_id); 
+				//return ERROR_SENSOR_CONNECT_FAIL;
+			}else{
+				g_dcam_r_client->addr = GC02M1B_SERIAL_ADDR;							
+				id_status = 1;
+				break;
+			}
+		}
+	}
 	if (!id_status){
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
@@ -1917,6 +2365,10 @@ static UINT32 CameraOpen(struct i2c_client *client)
 		GC2145_Sensor_Init(client);
 	else    if(sensor_id == GC0310_SENSOR_ID)
 		GC0310_Sensor_Init(client);
+	else    if(sensor_id == GC02M1B_SENSOR_ID)
+		GC02M1B_Sensor_Init(client);
+	else    if(sensor_id == GC2375H_SENSOR_ID)
+		GC2375H_Sensor_Init(client);
 	else
 		GC6153_Sensor_Init(client);
 
@@ -2333,6 +2785,7 @@ static int dcam_i2c_probe(struct i2c_client *client, const struct i2c_device_id 
 		node = of_find_compatible_node(NULL,NULL,"prize,dcam_r");
 		dcam_data->pdn_pin = of_get_named_gpio(node,"pdn_pin",0);
 		dcam_data->rst_pin = of_get_named_gpio(node,"rst_pin",0);
+		dcam_data->avdd_pin = of_get_named_gpio(node,"avdd_pin",0);
 
 		printk("DCAM dcam_r_pdn_pin(%d)  dcam_data->pdn_pin(%d)\n",dcam_data->pdn_pin,dcam_data->pdn_pin);
 		gpio_request(dcam_data->pdn_pin,"dcam_r");
@@ -2342,6 +2795,9 @@ static int dcam_i2c_probe(struct i2c_client *client, const struct i2c_device_id 
         //prize-chj-20190522-Close the back frame after booting according to the timing requirements end
 		gpio_request(dcam_data->rst_pin,"dcam_r");
 		gpio_direction_output(dcam_data->rst_pin,0);
+		gpio_request(dcam_data->avdd_pin,"dcam_r");
+		gpio_direction_output(dcam_data->avdd_pin,0);
+
 		ret = of_property_read_u32(node,"sensor_type",&dcam_data->sensor_type);
 		if (ret){
 			printk("DCAM get sensor_type fail ret(%d)\n",ret);

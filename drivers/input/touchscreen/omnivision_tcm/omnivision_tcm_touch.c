@@ -34,7 +34,7 @@
 
 #define TYPE_B_PROTOCOL
 
-#define USE_DEFAULT_TOUCH_REPORT_CONFIG
+//#define USE_DEFAULT_TOUCH_REPORT_CONFIG
 
 #define TOUCH_REPORT_CONFIG_SIZE 128
 
@@ -1240,6 +1240,7 @@ int touch_suspend(struct ovt_tcm_hcd *tcm_hcd)
 					"Failed to enable wakeup gesture mode\n");
 			return retval;
 		}
+		printk("[%s]----DC_IN_WAKEUP_GESTURE_MODE \n", __func__);
 	}
 
 	return 0;

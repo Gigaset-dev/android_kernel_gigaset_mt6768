@@ -266,11 +266,6 @@ static int battery_psy_get_property(struct power_supply *psy,
 	int ret = 0;
 	struct mtk_battery *gm;
 	struct battery_data *bs_data;
-// prize modify by liaoxingen 20220817 start
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-	struct power_supply *bat_psy = power_supply_get_by_name("cw-bat");
-#endif
-	// prize modify by liaoxingen 20220817 end
 
 	gm = (struct mtk_battery *)power_supply_get_drvdata(psy);
 	bs_data = &gm->bs_data;
@@ -291,25 +286,11 @@ static int battery_psy_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
 		val->intval = bs_data->bat_health;
-// prize modify by liaoxingen 20220817 start
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-		if(bat_psy != NULL && !IS_ERR(bat_psy)) {
-			ret = power_supply_get_property(bat_psy,POWER_SUPPLY_PROP_HEALTH,val);
-		}
-#endif
-// prize modify by liaoxingen 20220817 end
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
 		bs_data->bat_present =
 			gauge_get_int_property(GAUGE_PROP_BATTERY_EXIST);
 		val->intval = bs_data->bat_present;
-// prize modify by liaoxingen 20220817 start
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-		if(bat_psy != NULL && !IS_ERR(bat_psy)) {
-			ret = power_supply_get_property(bat_psy,POWER_SUPPLY_PROP_PRESENT,val);
-		}
-#endif
-// prize modify by liaoxingen 20220817 end
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
 		val->intval = bs_data->bat_technology;
@@ -320,12 +301,13 @@ static int battery_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CAPACITY:
 		/* 1 = META_BOOT, 4 = FACTORY_BOOT 5=ADVMETA_BOOT */
 		/* 6= ATE_factory_boot */
-		if (gm->bootmode == 1 || gm->bootmode == 4
-			|| gm->bootmode == 5 || gm->bootmode == 6) {
-			val->intval = 75;
-			break;
-		}
-
+	//drv huangjwu 20230616 for meta read cap start
+	//	if (gm->bootmode == 1 || gm->bootmode == 4
+	//		|| gm->bootmode == 5 || gm->bootmode == 6) {
+	//		val->intval = 75;
+	//		break;
+	//	}
+	//drv huangjwu 20230616 for meta read cap end
 		if (gm->fixed_uisoc != 0xffff)
 			val->intval = gm->fixed_uisoc;
 		else
@@ -341,13 +323,6 @@ static int battery_psy_get_property(struct power_supply *psy,
 			val->intval = g_cw2017_capacity;	    
 	#endif  
    //prize-add cw2015-pengzhipeng-20171122-end
-   // prize modify by liaoxingen start 20220926
-	#if defined(CONFIG_MTK_CW2217_SUPPORT)
-		if(bat_psy != NULL && !IS_ERR(bat_psy)) {
-			ret = power_supply_get_property(bat_psy,POWER_SUPPLY_PROP_CAPACITY,val);
-		}
-	#endif
-	// prize modify by liaoxingen end 20220926
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		val->intval =
@@ -383,24 +358,10 @@ static int battery_psy_get_property(struct power_supply *psy,
 		if(cw2017_exit_flag == 1)	        
 			val->intval = g_cw2017_vol * 1000;
 	#endif
-   // prize modify by liaoxingen start 20220926
-	#if defined(CONFIG_MTK_CW2217_SUPPORT)
-		if(bat_psy != NULL && !IS_ERR(bat_psy)) {
-			ret = power_supply_get_property(bat_psy,POWER_SUPPLY_PROP_VOLTAGE_NOW,val);
-		}
-	#endif
-	// prize modify by liaoxingen end 20220926	
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		force_get_tbat(gm, true);
 		val->intval = gm->tbat_precise;
-   // prize modify by liaoxingen start 20220926
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-		if(bat_psy != NULL && !IS_ERR(bat_psy)) {
-			ret = power_supply_get_property(bat_psy,POWER_SUPPLY_PROP_TEMP,val);
-		}
-#endif
-   // prize modify by liaoxingen end 20220926
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY_LEVEL:
 		val->intval = check_cap_level(bs_data->bat_capacity);
@@ -412,12 +373,6 @@ static int battery_psy_get_property(struct power_supply *psy,
 	#if defined(CONFIG_MTK_CW2017_SUPPORT)
 		if(cw2017_exit_flag == 1)
 			val->intval = check_cap_level(g_cw2017_capacity);
-	#endif
-	#if defined(CONFIG_MTK_CW2217_SUPPORT)
-		if(bat_psy != NULL && !IS_ERR(bat_psy)) {
-			ret = power_supply_get_property(bat_psy,POWER_SUPPLY_PROP_CAPACITY,val);
-			val->intval = check_cap_level(val->intval);
-		}
 	#endif
 	/* przie add by liaoxingen 20210518 end */
 		break;
@@ -493,7 +448,14 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 
 	gm = psy->drv_data;
 	bs_data = &gm->bs_data;
+	//drv  huangjiwu for  upm6910 20230209 start
+	#ifdef CONFIG_CHARGER_UPM6910
+	chg_psy = power_supply_get_by_name("upm6910_charger");
+	#else
 	chg_psy = bs_data->chg_psy;
+	#endif
+	//drv  huangjiwu for  upm6910 20230209 end
+
 
 	if (IS_ERR_OR_NULL(chg_psy)) {
 		//chg_psy = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,"charger");
@@ -2893,27 +2855,11 @@ static int shutdown_event_handler(struct mtk_battery *gm)
 	int vbat = gauge_get_int_property(GAUGE_PROP_BATTERY_VOLTAGE);
 	int tmp = 25;
 	struct shutdown_controller *sdd = &gm->sdc;
-/* prize modify by liaoxingen start */
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-	union power_supply_propval val;
-	struct power_supply *bat_psy = NULL;
-#endif
-/* prize modify by liaoxingen end */
+
 	now.tv_sec = 0;
 	now.tv_nsec = 0;
 	duraction.tv_sec = 0;
 	duraction.tv_nsec = 0;
-	/* prize modify by liaoxingen start */
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-	bat_psy = power_supply_get_by_name("cw-bat");
-	if(bat_psy != NULL && !IS_ERR(bat_psy)) {
-		power_supply_get_property(bat_psy,POWER_SUPPLY_PROP_CAPACITY,&val);
-	    current_ui_soc = val.intval;
-	    current_soc = val.intval;
-		pr_info("%s current_soc=%d\n",__func__,current_soc);
-	}
-#endif
-	/* prize modify by liaoxingen end */
 
 	get_monotonic_boottime(&now);
 
@@ -3309,6 +3255,25 @@ int get_bat_id_voltage(void)
 EXPORT_SYMBOL(get_bat_id_voltage);
 #endif
 /*prize add by liuxuhui for bat---20220816---end*/
+/*prize add by liuxuhui for bat_det---20220729---start*/
+#ifdef CONFIG_SWITCH_BATTERY
+#include <linux/syscalls.h>
+static struct mtk_battery *prize_gm;
+int prize_det_battery_status(char level)
+{
+    bm_err("[%s] : begin\n", __func__);
+    if(level) {
+        // nothing
+    } else {
+        bm_err("[%s]restart fuelgauge pid:%d\n", __func__, prize_gm->fgd_pid);
+        kill_pid(find_vpid(prize_gm->fgd_pid), SIGKILL, 1);
+    }
+    bm_err("[%s] : end\n", __func__);
+    return 0;
+}
+EXPORT_SYMBOL(prize_det_battery_status);
+#endif
+/*prize add by liuxuhui for bat_det---20220729---end*/
 
 int battery_init(struct platform_device *pdev)
 {
@@ -3327,6 +3292,11 @@ int battery_init(struct platform_device *pdev)
 	gm->tmp_table = Fg_Temperature_Table;
 	gm->log_level = BMLOG_ERROR_LEVEL;
 	gm->sw_iavg_gap = 3000;
+/*prize add by liuxuhui for bat_det---20220729---start*/
+#ifdef CONFIG_SWITCH_BATTERY
+        prize_gm = gauge->gm;
+#endif
+/*prize add by liuxuhui for bat_det---20220729---end*/
 
 	init_waitqueue_head(&gm->wait_que);
 

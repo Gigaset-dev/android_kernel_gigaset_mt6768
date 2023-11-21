@@ -193,7 +193,7 @@ void msdc_dump_register_core(char **buff, unsigned long *size,
 	char buffer[PRINTF_REGISTER_BUFFER_SIZE + 1];
 	char *buffer_cur_ptr = buffer;
 
-	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
+	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE + 1);
 	SPREAD_PRINTF(buff, size, m, "MSDC%d normal register\n", id);
 	for (i = 0; msdc_offsets[i] != (u16)0xFFFF; i++) {
 		offset = msdc_offsets[i];
@@ -276,7 +276,7 @@ void msdc_dump_dbg_register(char **buff, unsigned long *size,
 	char buffer[PRINTF_REGISTER_BUFFER_SIZE + 1];
 	char *buffer_cur_ptr = buffer;
 
-	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
+	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE + 1);
 	SPREAD_PRINTF(buff, size, m, "MSDC debug register [set:out]\n");
 	for (i = 0; i < MSDC_DEBUG_REGISTER_COUNT + 1; i++) {
 		msg_size += ONE_REGISTER_STRING_SIZE;

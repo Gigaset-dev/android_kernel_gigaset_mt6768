@@ -710,7 +710,7 @@ static int __init ff_ctl_driver_init(void)
 #if defined(CONFIG_PRIZE_HARDWARE_INFO)
 	//id=mas_connect();
 	//prize by ycj start
-	sprintf(current_fingerprint_info.chip,"FT9371S6");
+	sprintf(current_fingerprint_info.chip,"FT9371L6");
 	//prize by ycj end
 	sprintf(current_fingerprint_info.id,"0x%x",read_id);
 	strcpy(current_fingerprint_info.vendor,"focaltech");

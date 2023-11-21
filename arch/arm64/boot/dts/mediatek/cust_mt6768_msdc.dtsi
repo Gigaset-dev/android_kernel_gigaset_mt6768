@@ -9,6 +9,8 @@
 
 &mmc0 {
 	status = "okay";
+	host-index = <0>;
+	host-function = <MSDC_EMMC>;
 	pinctrl-names = "default", "state_uhs";
 	pinctrl-0 = <&mmc0_pins_default>;
 	pinctrl-1 = <&mmc0_pins_uhs>;
@@ -85,6 +87,8 @@
 
 &mmc1 {
 	status = "okay";
+	host-index = <1>;
+	host-function = <MSDC_SD>;
 	pinctrl-names = "default", "state_uhs";
 	pinctrl-0 = <&mmc1_pins_default>;
 	pinctrl-1 = <&mmc1_pins_uhs>;
@@ -97,7 +101,7 @@
 	sd-uhs-sdr104;
 	sd-uhs-ddr50;
 	cd-gpios = <&pio 18 GPIO_ACTIVE_LOW>;
-	vmmc-supply = <&mt_pmic_vmch_ldo_reg>;
+	vmmc-supply = <&mt6358_vmch_eint_high>;
 	vqmmc-supply = <&mt_pmic_vmc_ldo_reg>;
 	no-mmc;
 	no-sdio;
@@ -120,12 +124,13 @@
 			drive-strength = <3>;
 		};
 
-		pins_insert {
+		sdcard_pins_insert: pins_insert {
 			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
 			bias-pull-up;
 		};
 	};
 
+	/* prize modified for change uhs pin ds to 5 for SD compatible issue start */
 	mmc1_pins_uhs: mmc1@0{
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO164__FUNC_MSDC1_DAT0>,
@@ -134,12 +139,13 @@
 				<PINMUX_GPIO161__FUNC_MSDC1_DAT3>,
 				<PINMUX_GPIO170__FUNC_MSDC1_CMD>;
 			input-enable;
-			drive-strength = <3>;
+			drive-strength = <5>;
 		};
 
 		pins_clk {
 			pinmux = <PINMUX_GPIO171__FUNC_MSDC1_CLK>;
-			drive-strength = <3>;
+			drive-strength = <5>;
 		};
 	};
+	/* prize modified for change uhs pin ds to 5 for SD compatible issue end */
 };

@@ -590,9 +590,6 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 				} else if (unlikely(0 == strcmp(psensor_inst->psensor_list->name, "ov16a1q_mipi_raw"))) {
 						/* ov16a1q_mipi_raw is 16MP sensor, effective resolution of 4608 x 3456 */
 							sprintf(current_camera_info[psensor->inst.sensor_idx].more,"%d*%d", 4608, 3456);
-				} else if (unlikely(0 == strcmp(psensor_inst->psensor_list->name, "ov64b40_mipi_raw"))) {
-						/* ov64b40_mipi_raw is 64MP sensor, effective resolution of 9248 x  6944 */
-							sprintf(current_camera_info[psensor->inst.sensor_idx].more,"%d*%d", 9248,  6944);
 				} else{
 				    sprintf(current_camera_info[psensor->inst.sensor_idx].more,"%d*%d",sensorResolution.SensorFullWidth,sensorResolution.SensorFullHeight);
 				}

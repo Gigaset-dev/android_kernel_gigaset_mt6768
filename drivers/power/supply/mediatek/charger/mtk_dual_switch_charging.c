@@ -131,7 +131,8 @@ static void set_step_current_limit(struct charger_manager *info)
       if(pdata->charging_current_limit > info->step_info.step2_max_current)
          pdata->charging_current_limit = info->step_info.step2_max_current;
    }
-   pr_err("set_step_current_limit step[%d] pdata->charging_current_limit =%d\n",info->step_info.current_step,pdata->charging_current_limit); 
+   pr_err("set_step_current_limit step[%d] pdata->charging_current_limit =%d,[%d][%d][%d]\n",info->step_info.current_step,pdata->charging_current_limit,
+   info->step_info.step1_max_current,info->step_info.step2_max_current,info->step_info.step3_vot1_current); 
    
 }
 #endif

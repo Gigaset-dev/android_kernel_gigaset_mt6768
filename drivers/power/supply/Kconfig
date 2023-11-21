@@ -824,11 +824,24 @@ config CHARGER_SGM41512
 	default n
 	help
 	  This is used to CHARGER_SGM41512
+
+config CHARGER_SGM41512V1
+	bool "CHARGER_SGM41512V1"
+	default n
+	help
+	  This is used to CHARGER_SGM41512
+
 config CHARGER_ETA6953
 	bool "CHARGER_ETA6953"
 	default n
 	help
 	  This is used to CHARGER_ETA6953
+	  
+config CHARGER_UPM6910
+	bool "CHARGER_UPM6910"
+	default n
+	help
+	  This is used to CHARGER_UPM6910
 #prize add by zhaopengge 20211215 end-----	
 
 # prize add by zhaopengge----20201030---start
@@ -935,6 +948,14 @@ config PRIZE_BATTERY_HIGTEMP_CTRL
 	help
 	  Say Y to enable charge driver.
 #prize add by tangcong 20220323 end
+
+#prize add by huangjiwu 20230525 start  
+config PRIZE_NOT_LIMIT_THERMAL_CHARGER
+	bool "Charger Driver for fg"
+	default n
+	help
+	  Say Y to enable charge driver.
+#prize add by huangjiwu 20230525 end
  
 config CUSTOM_BATTERY_EXTERNAL_CHANNEL
 	bool "customer external gauge test"
@@ -952,8 +973,13 @@ config MTK_CW2217_SUPPORT
 	default n
 	help
 	  Set to Yes if cw2217 is used.
+config MTK_CW2217_BATTERY_ID_AUXADC
+	bool "customer external gauge cw2217"
+    depends on MTK_CW2217_SUPPORT
+	default n
+	help
+	  Set to Yes if cw2217 is used.
 # prize add by liaoxingen end
-
 if MACH_MT6768
 source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
@@ -1035,6 +1061,12 @@ config  PRIZE_SET_DOUBLE_CHARGE
         default n
         help
            This is used to PRIZE_SET_DOUBLE_CHARGE
+		   
+config  MTK_DUAL_CHARGER_SUPPORT
+        bool "Charging is controlled according to the battery specification"
+        default n
+        help
+           This is used to MTK_DUAL_CHARGER_SUPPORT
 # /*prize add by liuxuhui---20220528---end*/
 
 # /*prize add by liuxuhui for bat---20220816---start*/
@@ -1047,5 +1079,13 @@ config MTK_CW2015_BATTERY_ID_AUXADC
           It depends on config MTK_CW2015_SUPPORT
           and config MTK_CW2015_SUPPORT_OF.
 # /*prize add by liuxuhui for bat---20220816---end*/
+
+#prize add by huarui, MT6762V1-71. ignore NoRp/DualRp.SRC cable, start
+config PRIZE_CHARGER_IGNORE_TYPEC_NORP
+	bool "PRIZE_CHARGER_IGNORE_TYPEC_NORP"
+	default n
+	help
+	  This is used to PRIZE_CHARGE_CTRL_POLICY
+#prize add by huarui, MT6762V1-71. ignore NoRp/DualRp.SRC cable, end
 
 endif # POWER_SUPPLY

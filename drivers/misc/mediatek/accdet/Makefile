@@ -23,3 +23,9 @@ obj-$(CONFIG_PRIZE_TYPEC_ACCDET) += typec_accdet.o
 obj-$(CONFIG_PRIZE_TYPEC_ACCDET) += accdet_auxadc.o
 #prize add by lipengpeng 20220505 end
 #prize added by huarui, headset support, 20190111-end
+
+# prize added by hanjiuping for hl5280 support start
+ccflags-$(CONFIG_TYPEC_AUDIO_FSA4480_SWITCH) += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
+obj-$(CONFIG_TYPEC_AUDIO_FSA4480_SWITCH) += accdet_auxadc.o
+obj-$(CONFIG_TYPEC_AUDIO_FSA4480_SWITCH) += fsa4480-i2c.o
+# prize added by hanjiuping for hl5280 support end

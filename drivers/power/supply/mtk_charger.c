@@ -60,9 +60,9 @@
 #include "mtk_charger.h"
 
 //prize-add-pengzhipeng-20220706-start
-#ifdef CONFIG_BAT_LOW_TEMP_PROTECT_ENABLE
+//#ifdef CONFIG_BAT_LOW_TEMP_PROTECT_ENABLE
 #define BAT_LOW_TEMP_PROTECT_ENABLE
-#endif
+//#endif
 //#prize-add-pengzhipeng-20220706-end
 //prize add by lipengpeng 20210621 start 
 #if defined(CONFIG_PRIZE_MT5725_SUPPORT_15W_NEW)
@@ -79,6 +79,9 @@ extern int get_wireless_charge_current(struct charger_data *pdata);
 int g_charge_is_screen_on = 1;
 EXPORT_SYMBOL(g_charge_is_screen_on);
 #endif
+
+static bool is_module_init_done;
+
 struct tag_bootmode {
 	u32 size;
 	u32 tag;
@@ -1453,6 +1456,7 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 	chr_err("%s\n", __func__);
 	info->chr_type = POWER_SUPPLY_TYPE_UNKNOWN;
 	info->charger_thread_polling = false;
+	info->pd_reset = false;
 
 	pdata1->disable_charging_count = 0;
 	pdata1->input_current_limit_by_aicl = -1;
@@ -1595,7 +1599,6 @@ static int charger_routine_thread(void *arg)
 {
 	struct mtk_charger *info = arg;
 	unsigned long flags;
-	static bool is_module_init_done;
 	bool is_charger_on;
 
 	while (1) {
@@ -1718,6 +1721,34 @@ static enum alarmtimer_restart
 	return ALARMTIMER_NORESTART;
 }
 
+//drv add by huangjiwu  2022093 start 
+#if defined(CONFIG_MTK_DUAL_CHARGER_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_50_SUPPORT)
+int is_chg2_exist = 0;
+EXPORT_SYMBOL_GPL(is_chg2_exist);
+///sys/devices/platform/charger/chg2_exist
+static ssize_t show_chg2_exist(struct device *dev, struct device_attribute *attr, char *buf)
+{
+  	int chg_cnt = 0;
+  
+  	if (is_chg2_exist){
+  		return sprintf(buf, "%u\n", is_chg2_exist);
+ 	}else{
+ 		if (get_charger_by_name("secondary_chg") != NULL){
+  			chg_cnt++;
+ 		}
+  		if (get_charger_by_name("primary_divider_chg") != NULL){
+  			chg_cnt++;
+  		}
+  		if (get_charger_by_name("secondary_divider_chg") != NULL){
+ 			chg_cnt++;
+  		}
+  	}
+  	return sprintf(buf, "%u\n", chg_cnt);
+
+}
+static DEVICE_ATTR(chg2_exist, 0664, show_chg2_exist, NULL);
+#endif
+//drv add by huangjiwu  2022093 end 
 static void mtk_charger_init_timer(struct mtk_charger *info)
 {
 	alarm_init(&info->charger_timer, ALARM_BOOTTIME,
@@ -1768,6 +1799,13 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify);
 	if (ret)
 		goto _out;
+//drv add by huangjiwu  2022093 start 
+#if defined(CONFIG_MTK_DUAL_CHARGER_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_50_SUPPORT)
+	ret = device_create_file(&(pdev->dev), &dev_attr_chg2_exist);
+	if (ret)
+		goto _out;
+#endif
+//drv add by huangjiwu  2022093 end 
 
 	battery_dir = proc_mkdir("mtk_battery_cmd", NULL);
 	if (!battery_dir) {
@@ -1953,12 +1991,28 @@ int psy_charger_set_property(struct power_supply *psy,
 			info->enable_hv_charging = false;
 		break;
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
+	//prize huangjiwu 20230525 for close thermal charger start
+	#if defined(CONFIG_PRIZE_NOT_LIMIT_THERMAL_CHARGER)
+		info->chg_data[idx].thermal_input_current_limit = -1;
+	#else
+	//prize huangjiwu 20230525 for close thermal charger end
 		info->chg_data[idx].thermal_charging_current_limit =
 			val->intval;
+	//prize huangjiwu 20230525 for close thermal charger start
+	#endif
+	//prize huangjiwu 20230525 for close thermal charger end
 		break;
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
+	//prize huangjiwu 20230525 for close thermal charger start
+	#if defined(CONFIG_PRIZE_NOT_LIMIT_THERMAL_CHARGER)
+		info->chg_data[idx].thermal_input_current_limit = -1;
+	#else
+	//prize huangjiwu 20230525 for close thermal charger end
 		info->chg_data[idx].thermal_input_current_limit =
 			val->intval;
+	//prize huangjiwu 20230525 for close thermal charger start
+	#endif
+	//prize huangjiwu 20230525 for close thermal charger end
 		break;
 	default:
 		return -EINVAL;
@@ -1994,7 +2048,8 @@ static void mtk_charger_external_power_changed(struct power_supply *psy)
 		psy->desc->name, prop.intval, prop2.intval,
 		get_vbus(info));
 
-	mtk_is_charger_on(info);
+	if(is_module_init_done)
+		mtk_is_charger_on(info);
 	_wake_up_charger(info);
 }
 

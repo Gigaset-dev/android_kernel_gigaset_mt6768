@@ -2015,7 +2015,13 @@ static int mt_usb_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	isoc_ep_end_idx = 1;
-	isoc_ep_gpd_count = 248; /* 30 ms for HS, at most (30*8 + 1) */
+//add by huangjiwu for endoscope driver,20220720
+#if defined(CONFIG_PRIZE_ENDOSCOPE)
+	   isoc_ep_gpd_count = 950; /* 30 ms for HS, at most (30*8 + 1) */
+#else
+	   isoc_ep_gpd_count = 248; /* 30 ms for HS, at most (30*8 + 1) */
+#endif
+//add by huangjiwu for endoscope driver,20220720
 
 	mtk_host_qmu_force_isoc_restart = 0;
 #endif

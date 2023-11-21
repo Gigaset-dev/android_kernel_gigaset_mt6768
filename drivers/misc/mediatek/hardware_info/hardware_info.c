@@ -50,12 +50,32 @@ struct hardware_info current_tp_info =
 {
 	"unknow","unknow","unknow","unknow",
 };
+//prize-wangyongsheng-2021330-for nfc start 
+struct hardware_info current_nfc_info =
+{
+	"unknow","unknow","unknow","unknow",
+};
+//prize-wangyongsheng-2021330-for nfc end
+
+//prize add by wangfei for line motor 20221027 start
+struct hardware_info current_line_motor_info =
+{
+	"unknow","unknow","unknow","unknow",
+};
+//prize add by wangfei for line motor 20221027 end
+
 //prize add by lipengpeng 20210820 start 
 struct hardware_info current_wireless_info =
 {
 	"unknow","unknow","unknow","unknow",
 };
 //prize add by lipengpeng 20210820 end 
+//prize add by lvyuanchuan 20221101 start 
+struct hardware_info current_cp_info =
+{
+	"unknow","unknow","unknow","unknow",
+};
+//prize add by lvyuanchuan 20221101 end 
 struct hardware_info current_alsps_info =
 {
 	"unknow","unknow","unknow","unknow",
@@ -95,22 +115,29 @@ struct hardware_info current_mmc_info =
 	"unknow","unknow","unknow","unknow",
 };
 /* prize addded by wangmengdong for hardware info, ufs life, 20210206,end */
-/* prize add by wuhui for sensorhub sar hardware info 2021.10.9 start*/
+/* prize modified by gongtaitao for sarsensor hardware info 20221026 start */
 struct hardware_info current_sarsensor_info =
 {
 	"unknow","unknow","unknow","unknow",
 };
-/* prize add by wuhui for sensorhub sar hardware info 2021.10.9 end*/
-
+/* prize modified by gongtaitao for sarsensor hardware info 20221026 end */
 EXPORT_SYMBOL_GPL(current_lcm_info);
 EXPORT_SYMBOL_GPL(current_camera_info);
 EXPORT_SYMBOL_GPL(current_tp_info);
+//prize-wangyongsheng-20210330-start
+EXPORT_SYMBOL_GPL(current_nfc_info);
+//prize-wangyongsheng-20210330-end
 EXPORT_SYMBOL_GPL(current_alsps_info);
 EXPORT_SYMBOL_GPL(current_gsensor_info);
 EXPORT_SYMBOL_GPL(current_msensor_info);
 EXPORT_SYMBOL_GPL(current_barosensor_info);
 EXPORT_SYMBOL_GPL(current_fingerprint_info);
+/* prize modified by gongtaitao for sarsensor hardware info 20221026 start */
 EXPORT_SYMBOL_GPL(current_sarsensor_info);
+/* prize modified by gongtaitao for sarsensor hardware info 20221026 end */
+//prize add by lvyuanchuan 20221101 start
+EXPORT_SYMBOL_GPL(current_cp_info);
+//prize add by lvyuanchuan 20221101 start
 //mt_battery_meter.h
 static void dev_get_current_lcm_info(char *buf)
 {
@@ -205,6 +232,24 @@ static void dev_get_wireless_version(char *buf)
 }
 #endif
 //prize add by lipengpeng 20210820 end  
+//prize add by lvyuanchuan 20221101 start 
+static void dev_get_cp_info(char *buf)
+{
+	char *p = buf;
+	HW_PRINT("dev_get_cp_info");
+	if(strcmp(current_cp_info.chip,"unknow") == 0)
+	return ;
+
+	p += sprintf(p, "\n[ChargePump]:\n");
+	p += sprintf(p, "  chip:%s\n", current_cp_info.chip);
+	p += sprintf(p, "  id:%s\n", current_cp_info.id);
+	p += sprintf(p, "  vendor:%s\n",current_cp_info.vendor);
+	p += sprintf(p, "  more:%s \n\n", current_cp_info.more);
+	
+	len += (p - buf);
+	HW_PRINT("%s",buf);
+}
+//prize add by lvyuanchuan 20221101 start 
 static void  dev_get_current_tp_info(char *buf)
 {	
 
@@ -224,6 +269,48 @@ static void  dev_get_current_tp_info(char *buf)
 	 HW_PRINT("%s",buf);
 	
 }
+//prize-wangyongsheng-2021330-for nfc start 
+static void  dev_get_current_nfc_info(char *buf)
+{	
+
+    char *p = buf;	
+	HW_PRINT("dev_get_current_nfc_info");
+	if(strcmp(current_nfc_info.chip,"unknow") == 0)
+	 	return ;
+ 
+	    
+	 p += sprintf(p, "\n[NFC]:\n");	
+	 p += sprintf(p, "  chip:%s\n", current_nfc_info.chip);	
+	 p += sprintf(p, "  id:%s\n", current_nfc_info.id);	
+	 p += sprintf(p, "  vendor:%s\n",current_nfc_info.vendor);		
+	 p += sprintf(p, "  more:%s\n", current_nfc_info.more);
+
+	 len += (p - buf);  
+	 HW_PRINT("%s",buf);
+	
+}
+//prize-wangyongsheng-2021330-for nfc start 
+
+//prize add by wangfei for line_motor 20221027 start 
+static void  dev_get_current_line_motor_info(char *buf)
+{	
+
+    char *p = buf;	
+	HW_PRINT("dev_get_current_line_motor_info");
+	if(strcmp(current_line_motor_info.chip,"unknow") == 0)
+	 	return ;
+ 
+	    
+	 p += sprintf(p, "\n[line_motor]:\n");	
+	 p += sprintf(p, "  chip:%s\n", current_line_motor_info.chip);	
+	 p += sprintf(p, "  id:%s\n", current_line_motor_info.id);	
+	 p += sprintf(p, "  vendor:%s\n",current_line_motor_info.vendor);		
+
+	 len += (p - buf);  
+	 HW_PRINT("%s",buf);
+	
+}
+//prize-wangyongsheng-2021330-for nfc start 
 static void dev_get_current_alsps_info(char *buf)
 {
     
@@ -295,25 +382,25 @@ static void dev_get_current_msensor_info(char *buf)
 	 len += (p - buf);  
 	 HW_PRINT("%s",buf);
 }
-/* prize add by wuhui for sensorhub sar hardware info 2021.10.9 start*/
+
+/* prize modified by gongtaitao for sarsensor hardware info 20221026 start */
 static void dev_get_current_sarsensor_info(char *buf)
 {
 	char *p = buf;
-
 	HW_PRINT("dev_get_current_sarsensor_info");
 	if(strcmp(current_sarsensor_info.chip,"unknow") == 0)
-		return ;
-
+	{
+	return ;
+	}
 	p += sprintf(p, "\n[SAR-sensor]:\n");
 	p += sprintf(p, "  chip:%s\n", current_sarsensor_info.chip);
 	p += sprintf(p, "  id:%s\n", current_sarsensor_info.id);
 	p += sprintf(p, "  vendor:%s\n",current_sarsensor_info.vendor);
 	p += sprintf(p, "  more:%s\n", current_sarsensor_info.more);
-
 	len += (p - buf);
 	HW_PRINT("%s",buf);
 }
-/* prize add by wuhui for sensorhub sar hardware info 2021.10.9 end*/
+/* prize modified by gongtaitao for sarsensor hardware info 20221026 end */
 
 static void dev_get_current_fingerprint_info(char *buf)
 {
@@ -462,21 +549,18 @@ static void dev_get_current_flash_lpddr_index_info(char *buf)
 	 for(i = 0;i < combin_num ; i++)
 	   p += sprintf(p, " %s\n",Cust_emmc_support[i]); 
    
+   	 //p += sprintf(p, "\n[flash life]:\n");
 /* prize addded by wangmengdong for hardware info, ufs life, 20210206,start */
-#if defined(CONFIG_MTK_UFS_SUPPORT)
-   	 p += sprintf(p, "\n[flash life]:\n");
+#if 0//defined(CONFIG_MTK_UFS_SUPPORT)
 	 p += sprintf(p, "LifeEstA=0x%02x LifeEstB=0x%02x\n",LifeEstA,LifeEstB);
 	 p += sprintf(p, "EOL=0x%02X\n", PreEOL);
-#else
-#if defined(CONFIG_DISPLAY_MMC_LIFE)     
-   	 p += sprintf(p, "\n[flash life]:\n");
+//#else
 	 p += sprintf(p, "LifeEstA=%s LifeEstB=%s\n",current_mmc_info.chip,current_mmc_info.vendor);
 	 p += sprintf(p, "EOL=%s\n",current_mmc_info.id);
 	 p += sprintf(p, " %s\n",current_mmc_info.more);
 #endif
 /* prize addded by wangmengdong for hardware info, ufs life, 20210206,end */
-#endif
-
+	 	
 	 len += (p - buf);  
 	 HW_PRINT("%s",buf);
 }
@@ -529,10 +613,13 @@ static ssize_t hardware_info_show(struct device *dev, struct device_attribute *a
 	dev_get_current_msensor_info(buf + len);
 	
 	dev_get_current_barosensor_info(buf + len);
-/* prize add by wuhui for sensorhub sar hardware info 2021.10.9 start*/
+	/* prize modified by gongtaitao for sarsensor hardware info 20221026 start */
 	dev_get_current_sarsensor_info(buf + len);
-/* prize add by wuhui for sensorhub sar hardware info 2021.10.9 end*/
+	/* prize modified by gongtaitao for sarsensor hardware info 20221026 end */
 	dev_get_current_fingerprint_info(buf + len);
+
+	dev_get_current_nfc_info(buf + len);
+
 	dev_get_current_coulo_info(buf + len);
 #if defined(CONFIG_PRIZE_HARDWARE_INFO_BAT)
 	dev_get_current_battery_info(buf + len);
@@ -548,7 +635,12 @@ static ssize_t hardware_info_show(struct device *dev, struct device_attribute *a
 	dev_get_current_flash_lpddr_index_info(buf + len);
 
 	dev_get_AudioParam_version_info(buf + len);
-
+	//prize add by wangfei for line motor 20221027 start 
+	dev_get_current_line_motor_info(buf + len);
+	//prize add by wangfei for line motor 20221027 start 
+	//prize add by lvyuanchuan 20221101 start
+	dev_get_cp_info(buf + len);
+	//prize add by lvyuanchuan 20221101 end
 	return len;
 
 }

@@ -85,8 +85,8 @@ static unsigned int lcm_compare_id(void);
 #define FRAME_HEIGHT			(2460)
 
 /* physical size in um */
-#define LCM_PHYSICAL_WIDTH		(69200)
-#define LCM_PHYSICAL_HEIGHT		(157600)
+#define LCM_PHYSICAL_WIDTH		(64500)
+#define LCM_PHYSICAL_HEIGHT		(129000)
 #define LCM_DENSITY						(480)
 
 #define REGFLAG_DELAY					0xFFFC
@@ -566,8 +566,7 @@ static void lcm_init_power(void)
 static void lcm_suspend_power(void)
 {
 	LCM_LOGI("%s:%d\n", __func__, __LINE__);
-	//prize add by lvyuanchuan for deep sleep mode,20220922
-	SET_RESET_PIN(1);
+	SET_RESET_PIN(0);
 	display_bias_disable();
 }
 

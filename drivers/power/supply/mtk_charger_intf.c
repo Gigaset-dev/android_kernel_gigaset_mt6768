@@ -87,9 +87,6 @@ int get_uisoc(struct mtk_charger *info)
 
 	bat_psy = info->bat_psy;
 
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-	bat_psy = power_supply_get_by_name("cw-bat");
-#endif
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s retry to get bat_psy\n", __func__);
 		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
@@ -149,9 +146,7 @@ int get_battery_voltage(struct mtk_charger *info)
 	int ret;
 
 	bat_psy = info->bat_psy;
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-	bat_psy = power_supply_get_by_name("cw-bat");
-#endif
+
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s retry to get bat_psy\n", __func__);
 		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
@@ -211,9 +206,7 @@ int get_battery_temperature(struct mtk_charger *info)
 	int ret;
 
 	bat_psy = info->bat_psy;
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-	bat_psy = power_supply_get_by_name("cw-bat");
-#endif
+
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s retry to get bat_psy\n", __func__);
 		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");

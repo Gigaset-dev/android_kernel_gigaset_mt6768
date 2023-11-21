@@ -79,7 +79,7 @@ struct ovt_tcm_board_data {
 #define TOUCH_INPUT_NAME "omnivision_tcm_touch"
 #define TOUCH_INPUT_PHYS_PATH "omnivision_tcm/touch_input"
 
-#define WAKEUP_GESTURE (0)
+#define WAKEUP_GESTURE (1)
 
 /* The chunk size RD_CHUNK_SIZE/WR_CHUNK_SIZE will not apply in HDL sensors */
 #define RD_CHUNK_SIZE 256 /* read length limit in bytes, 0 = unlimited */
@@ -544,8 +544,6 @@ struct ovt_tcm_hcd {
 			struct ovt_tcm_buffer *output);
 	void (*report_touch)(void);
 	void (*update_watchdog)(struct ovt_tcm_hcd *tcm_hcd, bool en);
-	
-	struct work_struct resume_work;//prize
 };
 
 struct ovt_tcm_module_cb {

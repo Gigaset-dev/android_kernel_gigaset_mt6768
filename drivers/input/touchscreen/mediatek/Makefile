@@ -43,4 +43,10 @@ obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_TOUCH_V33)	+=  focaltech_touch_V33/
 #prize by xuejian add fts 20220514 end
 # prize add by liaoxingen start
 obj-$(CONFIG_TOUCHSCREEN_ILITEK9882_SPI) += ILITEK9882_SPI/ 
-# prize add by liaoxingen end 
+# prize add by liaoxingen end
+#prize by xuejian ,add hynitron touch start 20220330
+obj-$(CONFIG_TOUCHSCREEN_HYNITRON) += hynitron/
+#prize by xuejian ,add hynitron touch end 20220330
+#prize added by chenjiaxi, add tlsc6x drivers, 20220408-start
+obj-$(CONFIG_TOUCHSCREEN_TLSC6X) += tlsc6x/
+#prize added by chenjiaxi, add tlsc6x drivers, 20220408-end

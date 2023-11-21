@@ -39,9 +39,9 @@
 /* #define RESUME_EARLY_UNBLANK */
 
 #define RESET_ON_RESUME_DELAY_MS 50
-
-#define PREDICTIVE_READING
-
+//prize add by wangfei for TP esd read 20210830 start 
+//#define PREDICTIVE_READING
+//prize add by wangfei for TP esd read 20210830 end
 #define MIN_READ_LENGTH 9
 
 /* #define FORCE_RUN_APPLICATION_FIRMWARE */
@@ -159,7 +159,6 @@ STORE_PROTOTYPE(ovt_tcm, reset)
 #ifdef WATCHDOG_SW
 STORE_PROTOTYPE(ovt_tcm, watchdog)
 #endif
-STORE_PROTOTYPE(ovt_tcm, ts_suspend)	//prize add by huarui
 SHOW_STORE_PROTOTYPE(ovt_tcm, no_doze)
 SHOW_STORE_PROTOTYPE(ovt_tcm, disable_noise_mitigation)
 SHOW_STORE_PROTOTYPE(ovt_tcm, inhibit_frequency_shift)
@@ -182,7 +181,6 @@ static struct device_attribute *attrs[] = {
 #ifdef WATCHDOG_SW
 	ATTRIFY(watchdog),
 #endif
-	ATTRIFY(ts_suspend),	//prize add by huarui
 };
 
 static struct device_attribute *dynamic_config_attrs[] = {
@@ -201,12 +199,10 @@ static struct device_attribute *dynamic_config_attrs[] = {
 	ATTRIFY(enable_glove),
 };
 
-static int ovt_tcm_get_app_info(struct ovt_tcm_hcd *tcm_hcd);
+ int ovt_tcm_get_app_info(struct ovt_tcm_hcd *tcm_hcd);
 static int ovt_tcm_sensor_detection(struct ovt_tcm_hcd *tcm_hcd);
 static void ovt_tcm_check_hdl(struct ovt_tcm_hcd *tcm_hcd,
 							unsigned char id);
-static int ovt_tcm_resume_ext(void);	//prize add by huarui
-static int ovt_tcm_suspend_ext(void);	//prize add by huarui
 
 static ssize_t ovt_tcm_sysfs_info_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -645,36 +641,6 @@ static ssize_t ovt_tcm_sysfs_watchdog_store(struct device *dev,
 }
 #endif
 
-//prize add by huarui ,tp suspend, 20210408-start
-static ssize_t ovt_tcm_sysfs_ts_suspend_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	int retval;
-	unsigned int input;
-	struct ovt_tcm_hcd *tcm_hcd;
-	tcm_hcd = g_tcm_hcd;
-
-	if (sscanf(buf, "%u", &input) != 1)
-		return -EINVAL;
-	mutex_lock(&tcm_hcd->extif_mutex);
-
-	if (input == 0) { //exit suspend
-		//ovt_tcm_resume_ext();
-	} else if (input == 1) { //enter suspend
-		//ovt_tcm_suspend_ext();
-	} else {
-		retval = -EINVAL;
-		goto exit;
-	}
-	retval = count;
-
-exit:
-	mutex_unlock(&tcm_hcd->extif_mutex);
-
-	return retval;
-}
-//prize add by huarui ,tp suspend, 20210408-end
-
 dynamic_config_sysfs(no_doze, DC_NO_DOZE)
 
 dynamic_config_sysfs(disable_noise_mitigation, DC_DISABLE_NOISE_MITIGATION)
@@ -700,6 +666,23 @@ dynamic_config_sysfs(grip_suppression_enabled, DC_GRIP_SUPPRESSION_ENABLED)
 dynamic_config_sysfs(enable_thick_glove, DC_ENABLE_THICK_GLOVE)
 
 dynamic_config_sysfs(enable_glove, DC_ENABLE_GLOVE)
+
+extern void prize_common_node_register(char* name,void(*set)(unsigned char on_off));
+int gesture_value=0;
+static void prize_gesture_func(unsigned char on)
+{
+	if(1 == on){
+		g_tcm_hcd->wakeup_gesture_enabled = 1;
+		printk("%s enter gesture\n", __func__);
+		gesture_value= 1;
+	}else if(0 == on){
+		printk("%s close gesture\n", __func__);
+		g_tcm_hcd->wakeup_gesture_enabled = 0;
+		gesture_value= 0;
+	}
+}
+
+EXPORT_SYMBOL_GPL(gesture_value);
 
 
 int ovt_tcm_add_module(struct ovt_tcm_module_cb *mod_cb, bool insert)
@@ -2323,7 +2306,7 @@ regulator_put:
 	return retval;
 }
 
-static int ovt_tcm_get_app_info(struct ovt_tcm_hcd *tcm_hcd)
+int ovt_tcm_get_app_info(struct ovt_tcm_hcd *tcm_hcd)
 {
 	int retval;
 	unsigned char *resp_buf;
@@ -2608,7 +2591,7 @@ get_info:
 	retval = 0;
 /*prize add by liaoxingen 202030325 start */
 #ifdef CONFIG_PRIZE_HARDWARE_INFO
-	sprintf(current_tp_info.chip,"FW:0x%02x", tcm_hcd->packrat_number);
+	//sprintf(current_tp_info.chip,"FW:0x%02x", tcm_hcd->packrat_number);
 	strcpy(current_tp_info.id, "td4321");
 	strcpy(current_tp_info.vendor, "omnivision_tcm");
 	sprintf(current_tp_info.more, "%d*%d", 1080, 2340);
@@ -3357,187 +3340,6 @@ static void ovt_tcm_helper_work(struct work_struct *work)
 	return;
 }
 
-//prize add by huarui , tp suspend, 20210408-start
-int ovt_tcm_resume_ext2(void){
-	int ret = 0;
-	struct ovt_tcm_hcd *tcm_hcd = g_tcm_hcd;
-
-	if (IS_ERR_OR_NULL(tcm_hcd)){
-		return 0;
-	}
-	
-	ret = cancel_work_sync(&tcm_hcd->resume_work);
-	if (ret){
-		LOGE(tcm_hcd->pdev->dev.parent, "cancel_work_sync:%d\n",__func__,ret);
-	}
-	//printk("HH %s cancel_work_sync:%d\n",__func__,ret);
-	ret = schedule_work(&tcm_hcd->resume_work);
-	if (!ret){
-		LOGE(tcm_hcd->pdev->dev.parent, "schedule_work:%d\n",__func__,ret);
-	}
-	//printk("HH %s schedule_work:%d\n",__func__,ret);
-	return 0;
-}
-int ovt_tcm_suspend_ext2(void){
-	struct ovt_tcm_hcd *tcm_hcd = g_tcm_hcd;
-
-	if (IS_ERR_OR_NULL(tcm_hcd)){
-		return 0;
-	}
-	
-	cancel_work_sync(&tcm_hcd->resume_work);
-	ovt_tcm_suspend_ext();
-
-	return 0;
-}
-
-static void ovt_tcm_resume_worker(struct work_struct *work){
-	
-	//struct ovt_tcm_hcd *pdata = container_of(work, struct ovt_tcm_hcd, resume_work);
-	//printk("HH %s +\n",__func__);
-	ovt_tcm_resume_ext();
-	//printk("HH %s -\n",__func__);
-}
-static int ovt_tcm_resume_ext(void)
-{
-	int retval;
-	struct ovt_tcm_module_handler *mod_handler;
-	struct ovt_tcm_hcd *tcm_hcd = g_tcm_hcd;
-
-	if (IS_ERR_OR_NULL(tcm_hcd)){
-		return 0;
-	}
-
-	if (!tcm_hcd->in_suspend)
-		return 0;
-
-	if (tcm_hcd->in_hdl_mode) {
-		if (!tcm_hcd->wakeup_gesture_enabled) {
-			tcm_hcd->enable_irq(tcm_hcd, true, NULL);
-			retval = ovt_tcm_wait_hdl(tcm_hcd);
-			if (retval < 0) {
-				LOGE(tcm_hcd->pdev->dev.parent,
-						"Failed to wait for completion of host download\n");
-				goto exit;
-			}
-			goto mod_resume;
-		}
-	} else {
-		if (!tcm_hcd->wakeup_gesture_enabled)
-			tcm_hcd->enable_irq(tcm_hcd, true, NULL);
-
-#ifdef RESET_ON_RESUME
-		msleep(RESET_ON_RESUME_DELAY_MS);
-		goto do_reset;
-#endif
-	}
-
-	if (IS_NOT_FW_MODE(tcm_hcd->id_info.mode) ||
-			tcm_hcd->app_status != APP_STATUS_OK) {
-		LOGN(tcm_hcd->pdev->dev.parent,
-				"Identifying mode = 0x%02x\n",
-				tcm_hcd->id_info.mode);
-		goto do_reset;
-	}
-
-	retval = tcm_hcd->sleep(tcm_hcd, false);
-	if (retval < 0) {
-		LOGE(tcm_hcd->pdev->dev.parent,
-				"Failed to exit deep sleep\n");
-		goto exit;
-	}
-
-	retval = ovt_tcm_rezero(tcm_hcd);
-	if (retval < 0) {
-		LOGE(tcm_hcd->pdev->dev.parent,
-				"Failed to rezero\n");
-		goto exit;
-	}
-
-	goto mod_resume;
-
-do_reset:
-	retval = tcm_hcd->reset_n_reinit(tcm_hcd, false, true);
-	if (retval < 0) {
-		LOGE(tcm_hcd->pdev->dev.parent,
-				"Failed to do reset and reinit\n");
-		goto exit;
-	}
-
-	if (IS_NOT_FW_MODE(tcm_hcd->id_info.mode) ||
-			tcm_hcd->app_status != APP_STATUS_OK) {
-		LOGN(tcm_hcd->pdev->dev.parent,
-				"Identifying mode = 0x%02x\n",
-				tcm_hcd->id_info.mode);
-		retval = 0;
-		goto exit;
-	}
-
-mod_resume:
-	touch_resume(tcm_hcd);
-
-#ifdef WATCHDOG_SW
-	tcm_hcd->update_watchdog(tcm_hcd, true);
-#endif
-
-	mutex_lock(&mod_pool.mutex);
-
-	if (!list_empty(&mod_pool.list)) {
-		list_for_each_entry(mod_handler, &mod_pool.list, link) {
-			if (!mod_handler->insert &&
-					!mod_handler->detach &&
-					(mod_handler->mod_cb->resume))
-				mod_handler->mod_cb->resume(tcm_hcd);
-		}
-	}
-
-	mutex_unlock(&mod_pool.mutex);
-
-	retval = 0;
-
-exit:
-	tcm_hcd->in_suspend = false;
-
-	return retval;
-}
-
-static int ovt_tcm_suspend_ext()
-{
-	struct ovt_tcm_module_handler *mod_handler;
-	struct ovt_tcm_hcd *tcm_hcd =  g_tcm_hcd;
-
-	if (IS_ERR_OR_NULL(tcm_hcd)){
-		return 0;
-	}
-
-	if (tcm_hcd->in_suspend)
-		return 0;
-
-
-	touch_suspend(tcm_hcd);
-
-	mutex_lock(&mod_pool.mutex);
-
-	if (!list_empty(&mod_pool.list)) {
-		list_for_each_entry(mod_handler, &mod_pool.list, link) {
-			if (!mod_handler->insert &&
-					!mod_handler->detach &&
-					(mod_handler->mod_cb->suspend))
-				mod_handler->mod_cb->suspend(tcm_hcd);
-		}
-	}
-
-	mutex_unlock(&mod_pool.mutex);
-
-	if (!tcm_hcd->wakeup_gesture_enabled)
-		tcm_hcd->enable_irq(tcm_hcd, false, true);
-
-	tcm_hcd->in_suspend = true;
-
-	return 0;
-}
-//prize add by huarui , tp suspend, 20210408-end
-
 #if defined(CONFIG_PM) || defined(CONFIG_FB)
 static int ovt_tcm_resume(struct device *dev)
 {
@@ -3756,6 +3558,7 @@ static int ovt_tcm_fb_notifier_cb(struct notifier_block *nb,
 			retval = ovt_tcm_early_suspend(&tcm_hcd->pdev->dev);
 		else if (action == FB_EVENT_BLANK) {
 			if (*transition == FB_BLANK_POWERDOWN) {
+				printk("[%s] ovt_tcm_suspend\n", __func__);
 				retval = ovt_tcm_suspend(&tcm_hcd->pdev->dev);
 				tcm_hcd->fb_ready = 0;
 			} else if (*transition == FB_BLANK_UNBLANK) {
@@ -4116,6 +3919,8 @@ static int ovt_tcm_probe(struct platform_device *pdev)
 		}
 	}
 
+	prize_common_node_register("GESTURE", &prize_gesture_func);
+
 #ifdef CONFIG_FB
 	tcm_hcd->fb_notifier.notifier_call = ovt_tcm_fb_notifier_cb;
 	retval = fb_register_client(&tcm_hcd->fb_notifier);
@@ -4140,8 +3945,6 @@ static int ovt_tcm_probe(struct platform_device *pdev)
 	tcm_hcd->helper.workqueue =
 			create_singlethread_workqueue("ovt_tcm_helper");
 	INIT_WORK(&tcm_hcd->helper.work, ovt_tcm_helper_work);
-	
-	INIT_WORK(&tcm_hcd->resume_work, ovt_tcm_resume_worker);//prize add 
 
 #ifdef WATCHDOG_SW
 	tcm_hcd->watchdog.workqueue =
@@ -4208,7 +4011,6 @@ err_enable_irq:
 	destroy_workqueue(tcm_hcd->watchdog.workqueue);
 #endif
 
-	cancel_work_sync(&tcm_hcd->resume_work);//prize add 
 	cancel_work_sync(&tcm_hcd->helper.work);
 	flush_workqueue(tcm_hcd->helper.workqueue);
 	destroy_workqueue(tcm_hcd->helper.workqueue);

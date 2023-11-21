@@ -169,7 +169,24 @@ static ssize_t fts_gesture_buf_store(
     return -EPERM;
 }
 
+int tp_gesture_flag = 0;
+extern void prize_common_node_register(char* name,void(*set)(unsigned char on_off));
+static void fts_gesture_func(unsigned char on)
+{
+	
+	if(1 == on){
+		fts_data->gesture_mode = ENABLE;
+		printk("%s enter gesture\n", __func__);
+		tp_gesture_flag= 1;
+	}else if(0 == on){
+		fts_data->gesture_mode = DISABLE;
+		tp_gesture_flag= 0;
+		printk("%s close gesture\n", __func__);
+	}
+	
+}
 
+EXPORT_SYMBOL_GPL(tp_gesture_flag);
 /* sysfs gesture node
  *   read example: cat  fts_gesture_mode       ---read gesture mode
  *   write example:echo 1 > fts_gesture_mode   --- write gesture mode to 1
@@ -226,7 +243,7 @@ static void fts_gesture_report(struct input_dev *input_dev, int gesture_id)
         gesture = KEY_GESTURE_DOWN;
         break;
     case GESTURE_DOUBLECLICK:
-        gesture = KEY_GESTURE_U;
+        gesture = KEY_WAKEUP;
         break;
     case GESTURE_O:
         gesture = KEY_GESTURE_O;
@@ -357,12 +374,12 @@ int fts_gesture_suspend(struct fts_ts_data *ts_data)
     }
 
     for (i = 0; i < 5; i++) {
-        fts_write_reg(0xD1, 0xFF);
-        fts_write_reg(0xD2, 0xFF);
-        fts_write_reg(0xD5, 0xFF);
-        fts_write_reg(0xD6, 0xFF);
-        fts_write_reg(0xD7, 0xFF);
-        fts_write_reg(0xD8, 0xFF);
+        fts_write_reg(0xD0, 0xFF);
+  //      fts_write_reg(0xD2, 0xFF);
+  //      fts_write_reg(0xD5, 0xFF);
+ //       fts_write_reg(0xD6, 0xFF);
+ //       fts_write_reg(0xD7, 0xFF);
+ //       fts_write_reg(0xD8, 0xFF);
         fts_write_reg(FTS_REG_GESTURE_EN, ENABLE);
         msleep(1);
         fts_read_reg(FTS_REG_GESTURE_EN, &state);
@@ -413,6 +430,7 @@ int fts_gesture_init(struct fts_ts_data *ts_data)
     FTS_FUNC_ENTER();
     input_set_capability(input_dev, EV_KEY, KEY_POWER);
     input_set_capability(input_dev, EV_KEY, KEY_GESTURE_U);
+	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
     input_set_capability(input_dev, EV_KEY, KEY_GESTURE_UP);
     input_set_capability(input_dev, EV_KEY, KEY_GESTURE_DOWN);
     input_set_capability(input_dev, EV_KEY, KEY_GESTURE_LEFT);
@@ -432,6 +450,7 @@ int fts_gesture_init(struct fts_ts_data *ts_data)
     __set_bit(KEY_GESTURE_UP, input_dev->keybit);
     __set_bit(KEY_GESTURE_DOWN, input_dev->keybit);
     __set_bit(KEY_GESTURE_U, input_dev->keybit);
+	__set_bit(KEY_WAKEUP, input_dev->keybit);
     __set_bit(KEY_GESTURE_O, input_dev->keybit);
     __set_bit(KEY_GESTURE_E, input_dev->keybit);
     __set_bit(KEY_GESTURE_M, input_dev->keybit);
@@ -446,7 +465,8 @@ int fts_gesture_init(struct fts_ts_data *ts_data)
 
     memset(&fts_gesture_data, 0, sizeof(struct fts_gesture_st));
     ts_data->gesture_mode = FTS_GESTURE_EN;
-
+	
+	prize_common_node_register("GESTURE", &fts_gesture_func);
     FTS_FUNC_EXIT();
     return 0;
 }

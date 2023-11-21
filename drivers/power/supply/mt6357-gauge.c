@@ -2289,12 +2289,6 @@ static int bat_vol_get(struct mtk_gauge *gauge,
 	struct mtk_gauge_sysfs_field_info *attr, int *val)
 {
 	int ret;
-	/* prize modify by liaoxingen start */
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-	union power_supply_propval propval;
-	struct power_supply *bat_psy = NULL;
-#endif
-	/* prize modify by liaoxingen end */
 
 	if (!IS_ERR(gauge->chan_bat_voltage)) {
 		ret = iio_read_channel_processed(gauge->chan_bat_voltage, val);
@@ -2315,22 +2309,12 @@ static int bat_vol_get(struct mtk_gauge *gauge,
 	}else{
 		ret = iio_read_channel_processed(gauge->chan_bat_voltage, val);
 		if (ret < 0)
-		bm_err("[%s] iio_read_channel_processed read fail,ret=%d\n", __func__, ret);
+			bm_err("[%s] iio_read_channel_processed read fail,ret=%d\n", __func__, ret);
 	}
 //prize add by lipengpeng 20210819 end 
     //bm_err("[%s]g_cw2015_vol =%d\n", __func__,*val);
  #endif
 //prize-add cw2015-sunshuai-20201231-end
-	/* prize modify by liaoxingen start */
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-	bat_psy = power_supply_get_by_name("cw-bat");
-	if(bat_psy != NULL && !IS_ERR(bat_psy)) {
-		power_supply_get_property(bat_psy,POWER_SUPPLY_PROP_VOLTAGE_NOW,&propval);
-		*val = propval.intval;
-		pr_info("%s *val=%d\n",__func__,*val);
-	}
-#endif
-	/* prize modify by liaoxingen end */
 
 	return ret;
 }
@@ -3003,12 +2987,6 @@ static long adc_cali_ioctl(
 	int temp_car_tune;
 	int isdisNAFG = 0;
 	struct mtk_battery *gm;
-	/* prize modify by liaoxingen start */
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-		union power_supply_propval propval;
-		struct power_supply *bat_psy = NULL;
-#endif
-	/* prize modify by liaoxingen end */
 
 	bm_notice("%s enter\n", __func__);
 	gm = get_mtk_battery();
@@ -3039,28 +3017,16 @@ static long adc_cali_ioctl(
 		adc_out_data[0] = gm->ui_soc;
 /*prize add by anhengxuan 20210506-----start*/
 	#if defined(CONFIG_MTK_CW2015_SUPPORT)
-		if(cw2015_exit_flag==1){
-	    	adc_out_data[0] =g_cw2015_capacity;
+			 if(cw2015_exit_flag==1){
+	    adc_out_data[0] =g_cw2015_capacity;
 //prize add by lipengpeng 20210819 start 
 		}else{
 		adc_out_data[0] = gm->ui_soc;
-			printk("lpp--cw2015 not loader adc_out_data[0]=%d\n",adc_out_data[0]);
+		printk("lpp--cw2015 not loader adc_out_data[0]=%d\n",adc_out_data[0]);
 		}
 //prize add by lipengpeng 20210819 end 
 	#endif
 /*prize add by anhengxuan 20210506-----end*/
-		/* prize modify by liaoxingen start */
-#if defined(CONFIG_MTK_CW2217_SUPPORT)
-		bat_psy = power_supply_get_by_name("cw-bat");
-		if(bat_psy != NULL && !IS_ERR(bat_psy)) {
-			power_supply_get_property(bat_psy,POWER_SUPPLY_PROP_CAPACITY,&propval);
-			adc_out_data[0] = propval.intval;
-			pr_info("%s adc_out_data[0]=%d\n",__func__,adc_out_data[0]);
-		}
-#endif
-	/* prize modify by liaoxingen end */
-
-	
 		if (copy_to_user(user_data_addr, adc_out_data,
 			sizeof(adc_out_data))) {
 			mutex_unlock(&gm->gauge->fg_mutex);

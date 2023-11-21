@@ -11,7 +11,7 @@
 #include <linux/time.h>
 #include <linux/slab.h>
 #include <linux/version.h>
-#include <mt-plat/v1/mtk_battery.h>
+#include <mtk_battery.h>
 
 #if defined(CONFIG_PRIZE_HARDWARE_INFO)
 #include "hardware_info.h"
@@ -141,9 +141,13 @@ extern int IMM_GetOneChannelValue_Cali(int Channel, int *voltage);
 //prize-add-sunshuai-2015 Multi-Battery Solution-20200222-end
 
 int g_cw2015_capacity = 0;
+EXPORT_SYMBOL(g_cw2015_capacity);
 int g_cw2015_vol = 0;
+EXPORT_SYMBOL(g_cw2015_vol);
 int cw2015_exit_flag=0;
+EXPORT_SYMBOL(cw2015_exit_flag);
 int charger_status = 0;
+static struct mtk_battery *gm_info;
 
 
 /*Define CW2015 iic read function*/
@@ -456,16 +460,18 @@ static int cw_get_capacity(struct cw_battery *cw_bat)
 	unsigned char temp_val;
 	int i;
 	unsigned char temp_val1;
-	static int temperature = -100;
+	static int temperature = 25;
 	static int reset_loop = 0;
-	static int charging_loop = 0;
-	static int discharging_loop = 0;
-	static int jump_flag = 0;
+	//static int charging_loop = 0;
+	//static int discharging_loop = 0;
+	//static int jump_flag = 0;
 	static int charging_5_loop = 0;
-	int sleep_cap = 0;
+	//int sleep_cap = 0;
 	int remainder = 0;
 	int real_SOC = 0;
 	int digit_SOC = 0;
+	int UI_SOC = 0;
+	int ui_100 = 93;
 	
 	ret = cw_read_word(cw_bat->client, REG_SOC, reg_val);
 	if (ret < 0){
@@ -480,7 +486,10 @@ static int cw_get_capacity(struct cw_battery *cw_bat)
 	real_SOC = reg_val[0];
 	digit_SOC = reg_val[1];
 	
-	temperature = battery_get_bat_temperature();//read_tbat_value();
+	if(gm_info != NULL){
+	   temperature = gm_info->cur_bat_temp;
+       //printk("cw_get_capacity  temperature= %d gm_info->cur_bat_temp =%d\n", temperature,gm_info->cur_bat_temp);
+	}
 
 	if ((temperature < -1) && (cw_capacity == 0))
 	{
@@ -553,17 +562,22 @@ static int cw_get_capacity(struct cw_battery *cw_bat)
 	}*/
 	
 	/* case 1 : aviod swing */
-	remainder = (((real_SOC * 256 + digit_SOC) * 100) / 256) % 100;
+	UI_SOC = ((real_SOC * 256 + digit_SOC) * 100)/ (ui_100*256);
+	remainder = (((real_SOC * 256 + digit_SOC) * 100 * 100) / (ui_100*256)) % 100;
 		
 	printk(KERN_ERR"real_SOC = %d, digit_SOC = %d, remainder = %d, cw_capacity = %d, cw_bat->capacity = %d\n", 
 		real_SOC, digit_SOC, remainder, cw_capacity, cw_bat->capacity);
-		
+	if(UI_SOC >= 100){
+		UI_SOC = 100;
+	}
+	
+	cw_capacity = UI_SOC;
 	if((remainder > 70 || remainder < 30) && (cw_capacity >= (cw_bat->capacity - 1)) && (cw_capacity <= (cw_bat->capacity + 1)) && (cw_capacity != 100))
 	{
 		cw_capacity = cw_bat->capacity;
 	}
 
-#if 1
+#if 0
 	/* case 2 : aviod no charge full */
 	if ((cw_bat->charger_mode > 0) && (cw_capacity >= 95) && (cw_capacity <= cw_bat->capacity)) {
 		cw_printk(1,"Chaman join no charge full realy soc [%d]\n",cw_capacity);
@@ -578,9 +592,6 @@ static int cw_get_capacity(struct cw_battery *cw_bat)
 			cw_capacity = cw_bat->capacity; 
 		}
 		cw_printk(1,"Chaman join no charge full after choose soc [%d]\n",cw_capacity);
-	}
-	else {
-		charging_loop = 0;
 	}
 
 	/*case 3 : avoid battery level jump to CW_BAT */
@@ -763,15 +774,40 @@ static void cw_update_charge_status(struct cw_battery *cw_bat)
 }
 
 
+extern struct mtk_battery *get_mtk_battery(void);
+
 static void cw_update_capacity(struct cw_battery *cw_bat)
 {
     int cw_capacity;
+//prize add by sunshuai 20210105 start
+	int capacity_last = 0;
+	int more_to_zero = 0;
+	int power_off_charge = 0;
+	
+	if(gm_info == NULL)
+		gm_info = get_mtk_battery();
+//prize add by sunshuai 20210105 end
+
     cw_capacity = cw_get_capacity(cw_bat);
 
-    if ((cw_capacity >= 0) && (cw_capacity <= 100) && (cw_bat->capacity != cw_capacity)) {				
+    if ((cw_capacity >= 0) && (cw_capacity <= 100) && (cw_bat->capacity != cw_capacity)) {
+		capacity_last = cw_bat->capacity;
         cw_bat->capacity = cw_capacity;
 		cw_bat->change = 1;
+		
+		if(cw_bat->capacity == 0 && capacity_last >= 1){
+			printk("cw_update_capacity bootmdoe = %d\n", gm_info->bootmode);
+			printk("charger_mode = %d, status = %d, capacity = %d, voltage = %d  capacity_last =%d\n", cw_bat->charger_mode, cw_bat->status, cw_bat->capacity, cw_bat->voltage,capacity_last);
+			more_to_zero =1;
+		}
+		
+		if(gm_info->bootmode == 8 || gm_info->bootmode == 9)
+			power_off_charge =1;
+		
+		//if((more_to_zero == 1)&& (power_off_charge ==0))
+			//kernel_power_off();
     }
+		
 }
 
 
@@ -1182,6 +1218,9 @@ static int cw2015_probe(struct i2c_client *client, const struct i2c_device_id *i
 		strcpy(current_coulo_info.more,"coulombmeter");
 	#endif
 	cw2015_exit_flag = 1;
+
+	gm_info = get_mtk_battery();
+
 	cw_printk(1,"cw2015 driver probe success!\n");
     return 0;
 }

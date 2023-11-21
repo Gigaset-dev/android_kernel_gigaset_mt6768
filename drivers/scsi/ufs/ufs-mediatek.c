@@ -30,7 +30,7 @@
 #ifdef CONFIG_MTK_AEE_FEATURE
 #include <mt-plat/aee.h>
 #endif
-#include <mt-plat/upmu_common.h>
+
 #define CREATE_TRACE_POINTS
 #include "trace/events/ufs_mtk.h"
 
@@ -71,16 +71,6 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable);
 
 #define ufs_mtk_device_reset_ctrl(high, res) \
 	ufs_mtk_smc(UFS_MTK_SIP_DEVICE_RESET, high, res)
-
-#if defined(PMIC_RG_LDO_VUFS_LP_ADDR)
-#define ufs_mtk_vufs_set_lpm(on) \
-	pmic_config_interface(PMIC_RG_LDO_VUFS_LP_ADDR, \
-					(on), \
-					PMIC_RG_LDO_VUFS_LP_MASK, \
-					PMIC_RG_LDO_VUFS_LP_SHIFT)
-#else
-#define ufs_mtk_vufs_set_lpm(on)
-#endif
 
 int ufsdbg_perf_dump = 0;
 static struct ufs_hba *ufs_mtk_hba;
@@ -523,7 +513,6 @@ static void ufs_mtk_parse_dt(struct ufs_mtk_host *host)
 	struct ufs_hba *hba = host->hba;
 	struct device *dev = hba->dev;
 	int ret;
-	u32 tmp;
 
 	/*
 	 * Parse reference clock control setting
@@ -547,14 +536,6 @@ static void ufs_mtk_parse_dt(struct ufs_mtk_host *host)
 		dev_info(hba->dev, "%s: failed to get va09!\n",
 			 __func__);
 	}
-
-	tmp = 0;
-	ret = of_property_read_u32(dev->of_node, "mediatek,vreg_vufs_lpm",
-								&tmp);
-	if (ret)
-		host->vreg_lpm_supported = FALSE;
-	else
-		host->vreg_lpm_supported = tmp ? TRUE : FALSE;
 
 	if (of_property_read_bool(dev->of_node, "mediatek,ufs-qos")) {
 		host->qos_allowed = true;
@@ -700,7 +681,7 @@ static int ufs_mtk_hce_enable_notify(struct ufs_hba *hba,
 			ufs_mtk_crypto_enable(hba);
 		break;
 	case POST_CHANGE:
-		if (hba->quirks & UFS_MTK_HOST_QUIRK_UFS_HCI_PERF_HEURISTIC) {
+		if (ufs_mtk_has_ufshci_perf_heuristic(hba)) {
 			/* [31:16] PRE_ULTRA, [15:0] ULTRA */
 			ufshcd_writel(hba, 0x00400080,
 				REG_UFS_MTK_AXI_W_ULTRA_THR);
@@ -719,23 +700,15 @@ static void ufs_mtk_pm_qos(struct ufs_hba *hba, bool qos_en)
 
 	if (host && host->pm_qos_init) {
 		if (qos_en) {
-			if (hba->quirks &
-				UFS_MTK_HOST_QUIRK_UFS_HCI_PERF_HEURISTIC) {
-				pm_qos_update_request(
-				&host->req_mm_bandwidth,
-				5554);
-			}
+			if (ufs_mtk_has_ufshci_perf_heuristic(hba))
+				mtk_pm_qos_update_request(&host->req_mm_bandwidth, 5554);
 
-			pm_qos_update_request(
-				&host->req_cpu_dma_latency, 0);
+			pm_qos_update_request(&host->req_cpu_dma_latency, 0);
 		} else {
-			pm_qos_update_request(
-				&host->req_cpu_dma_latency,
-				PM_QOS_DEFAULT_VALUE);
+			pm_qos_update_request(&host->req_cpu_dma_latency, PM_QOS_DEFAULT_VALUE);
 
-			pm_qos_update_request(
-				&host->req_mm_bandwidth,
-				0);
+			if (ufs_mtk_has_ufshci_perf_heuristic(hba))
+				mtk_pm_qos_update_request(&host->req_mm_bandwidth, 0);
 		}
 	}
 }
@@ -785,11 +758,10 @@ static int ufs_mtk_setup_ref_clk(struct ufs_hba *hba, bool on)
 		return 0;
 
 	if (on) {
-		#if defined(CONFIG_MACH_MT6781) || defined(CONFIG_MACH_MT6785)
-			clk_buf_ctrl(CLK_BUF_UFS, on);
-		#else
-			ufs_mtk_ref_clk_notify(on, res);
-		#endif
+	#if defined(CONFIG_MACH_MT6781) || defined(CONFIG_MACH_MT6785)
+		clk_buf_ctrl(CLK_BUF_UFS, on);
+	#endif
+		ufs_mtk_ref_clk_notify(on, res);
 		ufshcd_delay_us(host->ref_clk_ungating_wait_us, 10);
 	}
 
@@ -842,9 +814,8 @@ out:
 		ufshcd_delay_us(host->ref_clk_gating_wait_us, 10);
 	#if defined(CONFIG_MACH_MT6781) || defined(CONFIG_MACH_MT6785)
 		clk_buf_ctrl(CLK_BUF_UFS, on);
-	#else
-		ufs_mtk_ref_clk_notify(on, res);
 	#endif
+		ufs_mtk_ref_clk_notify(on, res);
 	}
 
 	return 0;
@@ -1287,6 +1258,12 @@ static int ufs_mtk_setup_clocks(struct ufs_hba *hba, bool on,
 		ufs_mtk_perf_setup(host, true);
 		if (host && host->qos_enabled)
 			ufs_mtk_biolog_clk_gating(false);
+		if(ufs_mtk_has_ufshci_perf_heuristic(hba)) {
+			if (!hba->outstanding_reqs) {
+				hba->ufs_mtk_qcmd_w_cmd_cnt = 0;
+				hba->ufs_mtk_qcmd_r_cmd_cnt = 0;
+			}
+		}
 	}
 
 out:
@@ -1366,8 +1343,8 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 
 	pm_qos_add_request(&host->req_cpu_dma_latency, PM_QOS_CPU_DMA_LATENCY,
 			   PM_QOS_DEFAULT_VALUE);
-	pm_qos_add_request(&host->req_mm_bandwidth,
-			   PM_QOS_MM_MEMORY_BANDWIDTH, 0);
+	mtk_pm_qos_add_request(&host->req_mm_bandwidth,
+			   MTK_PM_QOS_MEMORY_BANDWIDTH, 0);
 	host->pm_qos_init = true;
 
 	ufs_mtk_biolog_init(host->qos_allowed);
@@ -1396,6 +1373,7 @@ void ufs_mtk_exit(struct ufs_hba *hba)
 		/* remove pm_qos when exit */
 		mtk_pm_qos_remove_request(host->req_vcore);
 		pm_qos_remove_request(&host->req_cpu_dma_latency);
+		mtk_pm_qos_remove_request(&host->req_mm_bandwidth);
 		host->pm_qos_init = false;
 	}
 
@@ -1708,21 +1686,15 @@ static int ufs_mtk_link_set_lpm(struct ufs_hba *hba)
 
 static void ufs_mtk_vreg_set_lpm(struct ufs_hba *hba, bool lpm)
 {
-	struct ufs_mtk_host *host = ufshcd_get_variant(hba);
+	if (!hba->vreg_info.vccq2)
+		return;
 
-	if (lpm & !hba->vreg_info.vcc->enabled) {
-		if (hba->vreg_info.vccq2)
-			regulator_set_mode(hba->vreg_info.vccq2->reg,
-								REGULATOR_MODE_IDLE);
-		else if (host->vreg_lpm_supported)
-			ufs_mtk_vufs_set_lpm(1);
-	} else if (!lpm) {
-		if (hba->vreg_info.vccq2)
-			regulator_set_mode(hba->vreg_info.vccq2->reg,
-								REGULATOR_MODE_NORMAL);
-		else if (host->vreg_lpm_supported)
-			ufs_mtk_vufs_set_lpm(0);
-	}
+	if (lpm & !hba->vreg_info.vcc->enabled)
+		regulator_set_mode(hba->vreg_info.vccq2->reg,
+					REGULATOR_MODE_IDLE);
+	else if (!lpm)
+		regulator_set_mode(hba->vreg_info.vccq2->reg,
+					REGULATOR_MODE_NORMAL);
 }
 
 static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
@@ -1809,8 +1781,10 @@ static int ufs_mtk_apply_dev_quirks(struct ufs_hba *hba)
 	struct ufs_dev_info *dev_info = &hba->dev_info;
 	u16 mid = dev_info->wmanufacturerid;
 
-	if (mid == UFS_VENDOR_SAMSUNG)
+	if (mid == UFS_VENDOR_SAMSUNG) {
 		ufshcd_dme_set(hba, UIC_ARG_MIB(PA_TACTIVATE), 6);
+		ufshcd_dme_set(hba, UIC_ARG_MIB(PA_HIBERN8TIME), 10);
+	}
 
 	/*
 	 * Decide waiting time before gating reference clock and
@@ -1959,7 +1933,6 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 	if (!ufs_mtk_has_broken_auto_hibern8(hba))
 		return;
 
-	dev_dbg(hba->dev, "%s: ah8: %d, ahit: 0x%x\n", __func__, enable, hba->ahit);
 	ufs_mtk_auto_hibern8_update(hba, enable);
 }
 

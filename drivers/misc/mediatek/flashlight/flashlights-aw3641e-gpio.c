@@ -563,6 +563,7 @@ static int aw3641e_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id aw3641e_gpio_of_match[] = {
 	{.compatible = AW3641E_GPIO_DTNAME},
+	{.compatible = "mediatek,flashlights_aw3641_gpio"},
 	{},
 };
 MODULE_DEVICE_TABLE(of, aw3641e_gpio_of_match);

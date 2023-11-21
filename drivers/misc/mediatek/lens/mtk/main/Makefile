@@ -46,6 +46,7 @@ mainaf-y  += common/dw9714af/DW9714AF.o
 mainaf-y  += common/dw9800waf/DW9800WAF.o
 mainaf-y  += common/dw9814af/DW9814AF.o
 mainaf-y  += common/dw9718af/DW9718AF.o
+mainaf-y  += common/dw9718gaf/DW9718AF.o
 mainaf-y  += common/dw9718saf/DW9718SAF.o
 mainaf-y  += common/dw9718taf/DW9718TAF.o
 mainaf-y  += common/dw9719taf/DW9719TAF.o
@@ -80,11 +81,14 @@ mainaf-y  += common/gt9767af/GT9767AF.o
 mainaf-y  += common/gt9772af/GT9772AF.o
 mainaf-y  += common/aw8601csr/AW8601CSR.o
 mainaf-y  += common/fp5510fe4af/FP5510FE4AF.o
+mainaf-y  += common/cn3927elcaf/CN3927ELCAF.o
 ifeq ($(CONFIG_MTK_LENS_DW9781CAF_SUPPORT), y)
 mainaf-y  += common/dw9781caf/DW9781CAF.o
 mainaf-y  += common/dw9781caf/OIS_func_register.o
 endif
 mainaf-y  += common/aw8601xaf/AW8601xAF.o
 mainaf-y  += common/aw86014af/AW86014AF.o
+mainaf-y  += common/gt9764baf/GT9764BAF.o
+mainaf-y  += common/aw86017csraf/AW86017CSRAF.o
 #/*prize add by zhuzhengjiang for lens:zc535 20220110 end*/
 

@@ -1,0 +1,4 @@
+config PRIZE_CW9281_SCANNER_CTRL
+	bool "TTM for TTM"
+	help
+	  It support TTM control.

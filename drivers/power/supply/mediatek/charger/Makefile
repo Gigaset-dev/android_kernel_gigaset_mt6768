@@ -51,7 +51,26 @@ obj-$(CONFIG_LOAD_SWITCH_RT9750) += rt9750.o
 obj-$(CONFIG_CHARGER_MT6362) += mt6362-chg.o
 obj-$(CONFIG_CHARGER_BQ25890) += bq2589x_charger.o
 obj-$(CONFIG_CHARGER_SGM41511) += sgm4151x.o
+obj-$(CONFIG_CHARGER_SGM41512) += sgm41512.o
 obj-$(CONFIG_CHARGER_MM8013) += mm8013.o
+obj-$(CONFIG_CHARGER_SGM41516D) += sgm41516d.o
+obj-$(CONFIG_CHARGER_HL7139) += hl7139.o
 #//prize added by sunshuai, charge support, 20200507-start
 obj-$(CONFIG_PRIZE_MT5725_SUPPORT_15W) += mt5725_wireless_driver-15w.o
 #//prize added by sunshuai, charge support, 20200507-end
+#PRIZE:Added by lvyuanchuan,20230116 start
+obj-$(CONFIG_CHARGER_UPM6910D) += upm6910_charger.o
+#PRIZE:Added by lvyuanchuan,20230116 end
+#prize added by chenjiaxi, aw32207 drivers, 20220409-start
+obj-$(CONFIG_CHARGER_MTK_AW32207) += aw32207.o
+#prize added by chenjiaxi, aw32207 drivers, 20220409-end
+#prize add by wangfei for start
+obj-$(CONFIG_SC854X_CHARGER)		+= sc854x_charger.o
+#prize add by wangfei for end
+#driver add by zhaopengge -----20230723----start
+obj-$(CONFIG_SC851X_CHARGER)	+= sc851x_charger.o
+obj-$(CONFIG_SC8571_CHARGER)	+= sc8571_charger.o
+obj-$(CONFIG_PRIZE_MT5728_SUPPORT_30W) += mt5728_wireless_driver-15w.o
+obj-$(CONFIG_CHARGER_SC8815A)	+= sc8815a_charger.o
+#driver add by zhaopengge -----20230723----end
+

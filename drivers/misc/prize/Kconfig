@@ -105,8 +105,29 @@ config PRIZE_ENDOSCOPE
 	default n
 	help
 	  Select Y to enable prize endoscope enable
+	  
+config PRIZE_ENDOSCOPE_SM	
+	bool "endoscope sm enable"
+	default n
+	help
+	  Select Y to enable prize endoscope enable
 #prize add by lipengpeng 20210220 end 
 
+#drv add by yzp for aw22127 20230911 start
+config LEDS_AW22127
+	tristate "priz AW22127"
+	default n
+	help
+	  PRIZE_FM. If configures to be n, means devices doesn't support
+	  AW22127 functionality.
+#drv add by yzp for aw22127 20230911 end
+
+config PRIZE_COMMON_NODE
+	tristate "common node"
+	default n
+	help
+	  common_node. If configures to be n, means devices doesn't support
+	  common_node functionality.
 
 #prize add by liaojie, prize_exergen build support 20210128 start
 source "drivers/misc/prize/exergen/Kconfig"
@@ -120,3 +141,19 @@ source "drivers/misc/prize/laser_light_gpio/Kconfig"
 source "drivers/misc/prize/wl2868c/Kconfig"
 #/*prize add by zhuzhengjiang for camera ldo wl2868c 20220309  end*/ 
 
+#prize add by wangfei for motor aw86927 20221021 start
+source "drivers/misc/prize/haptic_hv/Kconfig"
+#prize add by wangfei for motor aw86927 20221021 end
+#drv add by lipengpeng 20230719 start 
+source "drivers/misc/prize/ttm/Kconfig"
+source "drivers/misc/prize/gms_adc/Kconfig"
+source "drivers/misc/prize/cw_scannerctrl/Kconfig"
+#drv add by lipengpeng 20230719 end
+
+#drv added by wangwei1, secondary screen driver, 20230814-start
+config PRIZE_LCD_ICNA3311
+		tristate "PRIZE_LCD_ICNA3311"
+		default n
+		help
+			PRIZE_LCD_ICNA3311
+#drv added by wangwei1, secondary screen driver, 20230814-end

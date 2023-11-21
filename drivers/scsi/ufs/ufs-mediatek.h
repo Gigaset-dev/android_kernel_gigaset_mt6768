@@ -176,7 +176,7 @@ struct ufs_mtk_host {
 
 	bool pm_qos_init;
 	struct pm_qos_request req_cpu_dma_latency;
-	struct pm_qos_request req_mm_bandwidth;
+	struct mtk_pm_qos_request req_mm_bandwidth;
 
 	/* performance mode */
 	enum perf_mode perf_mode;
@@ -186,9 +186,6 @@ struct ufs_mtk_host {
 	struct clk *crypto_parent_clk_normal;
 	struct clk *crypto_parent_clk_perf;
 	struct mtk_pm_qos_request *req_vcore;
-
-	/* vufs regulator lpm */
-	bool vreg_lpm_supported;
 
 	/*
 	 * RPMB device

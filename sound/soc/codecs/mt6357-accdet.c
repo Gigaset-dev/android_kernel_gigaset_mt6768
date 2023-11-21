@@ -112,7 +112,7 @@ int typec_accdet_mic_detect(void);
 //add by liaojie,for typec accdet 20220714
 #if defined(CONFIG_MTK_SAR_HUB)
 //prize-ACCDET sar calibration-liaoxingen-2022830-start 
-void __attribute__ ((weak)) sar_sensor_calibration_to_hub(void);
+void __attribute__ ((weak)) sar_sensor_calibration_to_hub(void){};
 extern void sar_sensor_calibration_to_hub(void);
 //prize-ACCDET sar calibration-liaoxingen-2022830-end
 #endif

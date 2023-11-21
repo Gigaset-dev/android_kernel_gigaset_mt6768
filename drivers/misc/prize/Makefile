@@ -46,3 +46,4 @@ obj-$(CONFIG_PRIZE_BAT_DET) += bat_det/
 #/*prize add by zhuzhengjiang for camera ldo wl2868c 20220309  start*/ 
 obj-$(CONFIG_PRIZE_CAMERA_LDO_WL2868C) += wl2868c/
 #/*prize add by zhuzhengjiang for camera ldo wl2868c 20220309  end*/ 
+obj-y += prize_common_node/

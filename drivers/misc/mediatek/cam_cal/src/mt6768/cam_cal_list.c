@@ -28,9 +28,11 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
     {OV64B40_SENSOR_ID, 0xA4, Common_read_region},
 	{S5KGM1ST_SENSOR_ID, 0xB0, Common_read_region},
     {OV16A1Q_SENSOR_ID, 0xA0, Common_read_region},
+	{GC13A0_SENSOR_ID, 0xA2, Common_read_region},
 	{GC08A3SUB_SENSOR_ID, 0xB4, Common_read_region},
 	{S5K4H7YX_SENSOR_ID, 0xA2, Common_read_region},
 	{S5KJN1_SENSOR_ID, 0xA0, Common_read_region},
+	{S5KHM2SP_SENSOR_ID, 0xA0, Common_read_region},
 	// prize add by linchong 20220124 end
 	/*  ADD before this line */
 	{0, 0, 0}       /*end of list */

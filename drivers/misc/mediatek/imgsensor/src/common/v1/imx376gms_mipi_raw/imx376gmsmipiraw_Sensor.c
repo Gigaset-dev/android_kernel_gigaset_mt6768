@@ -45,7 +45,7 @@
 
 #define PFX "IMX376GMS_camera_sensor"
 
-#define USE_REMOSAIC 0
+#define USE_REMOSAIC 1
 
 /* Add by LiuBin for register device info at 20160616 */
 #define DEVICE_VERSION_IMX376GMS     "imx376gms"
@@ -2535,31 +2535,35 @@ static kal_uint32 get_default_framerate_by_scenario(
 	return ERROR_NONE;
 }
 
-static kal_uint32 set_test_pattern_mode(kal_uint32 modes,
-		struct SET_SENSOR_PATTERN_SOLID_COLOR *pdata)
+static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
+	LOG_INF("enable: %d\n", enable);
 
-
-	pr_debug("set_test_pattern enum: %d\n", modes);
-
-	if (modes) {
-		  write_cmos_sensor(0x0600, 0);
-		  write_cmos_sensor(0x0601, 1);
-			write_cmos_sensor(0x020e, 0x01);
-			write_cmos_sensor(0x020f, 0x00);
-
+	if (enable) {
+	/* 0x5E00[8]: 1 enable,  0 disable */
+	/* 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK */
+		write_cmos_sensor_8(0x0600, 0x00);
+		write_cmos_sensor_8(0x0601, 0x03);
+		write_cmos_sensor_8(0x0602, 0x00);
+		write_cmos_sensor_8(0x0603, 0x80);
+		write_cmos_sensor_8(0x0604, 0x00);
+		write_cmos_sensor_8(0x0605, 0x80);
+		write_cmos_sensor_8(0x0606, 0x00);
+		write_cmos_sensor_8(0x0607, 0x80);
+	} else {
+	/* 0x5E00[8]: 1 enable,  0 disable */
+	/* 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK */
+		write_cmos_sensor_8(0x0600, 0x00);
+		write_cmos_sensor_8(0x0601, 0x00);
+		write_cmos_sensor_8(0x0602, 0x00);
+		write_cmos_sensor_8(0x0603, 0x00);
+		write_cmos_sensor_8(0x0604, 0x00);
+		write_cmos_sensor_8(0x0605, 0x00);
+		write_cmos_sensor_8(0x0606, 0x00);
+		write_cmos_sensor_8(0x0607, 0x00);
 	}
-	else
-		{
-			write_cmos_sensor(0x0600, 0);
-		  write_cmos_sensor(0x0601, 0);
-			write_cmos_sensor(0x020e, 0x01);
-			write_cmos_sensor(0x020f, 0x00);
-
-		}
-
 	spin_lock(&imgsensor_drv_lock);
-	imgsensor.test_pattern = modes;
+	imgsensor.test_pattern = enable;
 	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
@@ -2702,8 +2706,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		}
 
 		case SENSOR_FEATURE_SET_TEST_PATTERN:
-			set_test_pattern_mode((UINT32)*feature_data,
-			(struct SET_SENSOR_PATTERN_SOLID_COLOR *)(uintptr_t)(*(feature_data + 1)));
+			set_test_pattern_mode((BOOL)*feature_data);
 			break;
 		case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:
 			/* for factory mode auto testing */

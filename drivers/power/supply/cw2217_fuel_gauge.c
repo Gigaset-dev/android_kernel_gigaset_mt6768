@@ -65,7 +65,7 @@ extern struct hardware_info current_coulo_info;
 
 #define CWFG_NAME               "cw221X"
 #define SIZE_OF_PROFILE         80
-#define USER_RSENSE             1000  /* mhom rsense * 1000  for convenience calculation */
+#define USER_RSENSE             5000  /* mhom rsense * 1000  for convenience calculation */
 
 #define queue_delayed_work_time  8000
 #define queue_start_work_time    50
@@ -99,8 +99,24 @@ extern struct hardware_info current_coulo_info;
 		else {}                                                                \
 	}
 
-//int g_cw2015_present = 0;
+//int g_cw221x_present = 0;
+int cw2217_exit_flag=0;
+EXPORT_SYMBOL(cw2217_exit_flag);
+int g_cw2217_capacity = 0;
+EXPORT_SYMBOL(g_cw2217_capacity);
+int g_cw2217_vol = 0;
+EXPORT_SYMBOL(g_cw2217_vol);
 
+int g_cw2217_temp = 0;
+EXPORT_SYMBOL(g_cw2217_temp);
+int g_cw2217_present = 0;
+EXPORT_SYMBOL(g_cw2217_present);
+int g_cw2217_health = 0;
+EXPORT_SYMBOL(g_cw2217_health);
+
+static int cw_convert_temp(int temp);
+
+int charger_status = 0;
 static unsigned char config_profile_info[SIZE_OF_PROFILE] = {
 	0x5A,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xAF,0xA0,
 	0xAF,0xC2,0xB0,0xA6,0xD7,0xC1,0xB6,0xFF,0xFF,0xF5,
@@ -111,6 +127,9 @@ static unsigned char config_profile_info[SIZE_OF_PROFILE] = {
 	0x00,0xB0,0x51,0x00,0x00,0x00,0x64,0x28,0xD3,0x3F,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xF2
 };
+
+#define SIZE_OF_TEMP 17
+static int tempset[SIZE_OF_TEMP],tempread[SIZE_OF_TEMP] = {0};
 
 struct cw_battery {
 	struct i2c_client *client;
@@ -134,6 +153,30 @@ struct cw_battery {
 	int  soh;
 	int  fw_version;
 };
+//prize-add-sunshuai-cw221x Multi-Battery Solution-20200222-start
+#if defined(CONFIG_MTK_CW2217_BATTERY_ID_AUXADC)
+struct cw221xbatinfo {
+   int bat_first_startrange;
+   int bat_first_endrange;
+   int first_bat_capacity;
+   int bat_second_startrange;
+   int bat_second_endrange;
+   int sec_bat_capacity;
+   int bat_third_startrange;
+   int bat_third_endrange;
+   int third_bat_capacity;
+   int bat_channel_num;
+   int bat_id;
+};
+
+struct cw221xbatinfo cw221xfuelguage;
+static char *fuelguage_name[] = {
+	"batinfo_first", "batinfo_second", "batinfo_third","batinfo_default"
+};
+
+extern int get_bat_id_voltage(void);
+#endif
+//prize-add-sunshuai-cw221x Multi-Battery Solution-20200222-end
 
 /* CW221X iic read function */
 static int cw_read(struct i2c_client *client, unsigned char reg, unsigned char buf[])
@@ -340,7 +383,7 @@ static int cw_get_capacity(struct cw_battery *cw_bat)
 	ui_soc = ((soc_h * 256 + soc_l) * 100)/ (ui_100 * 256);
 	remainder = (((soc_h * 256 + soc_l) * 100 * 100) / (ui_100 * 256)) % 100;
 	if (ui_soc >= 100){
-		cw_printk("CW2015[%d]: UI_SOC = %d larger 100!!!!\n", __LINE__, ui_soc);
+		cw_printk("cw221x[%d]: UI_SOC = %d larger 100!!!!\n", __LINE__, ui_soc);
 		ui_soc = 100;
 	}
 	cw_bat->ic_soc_h = soc_h;
@@ -604,9 +647,10 @@ static int cw221X_get_state(struct cw_battery *cw_bat)
 		if (ret < 0)
 			return ret;
 		reg_profile = REG_BAT_PROFILE + i;
-		cw_printk("0x%2x = 0x%2x\n", reg_profile, reg_val);
-		if (config_profile_info[i] != reg_val)
+		cw_printk("config_profile_info[%d] = 0x%2x, 0x%2x\n", i,config_profile_info[i],reg_val);
+		if (config_profile_info[i] != reg_val) {
 			break;
+		}
 	}
 	if ( i != SIZE_OF_PROFILE)
 		return CW221X_PROFILE_NEED_UPDATE;
@@ -615,11 +659,9 @@ static int cw221X_get_state(struct cw_battery *cw_bat)
 }
 
 /*CW221X init function, Often called during initialization*/
-static int cw_init(struct cw_battery *cw_bat)
+static int cw_check_id(struct cw_battery *cw_bat)
 {
 	int ret;
-
-	cw_printk("\n");
 	ret = cw_get_chip_id(cw_bat);
 	if (ret < 0) {
 		printk("iic read write error");
@@ -629,7 +671,13 @@ static int cw_init(struct cw_battery *cw_bat)
 		printk("not cw221X\n");
 		return -1;
 	}
+	return 0;
+}
+static int cw_init(struct cw_battery *cw_bat)
+{
+	int ret;
 
+	cw_printk("\n");
 	ret = cw221X_get_state(cw_bat);
 	if (ret < 0) {
 		printk("iic read write error");
@@ -666,7 +714,12 @@ static void cw_bat_work(struct work_struct *work)
 	power_supply_changed(cw_bat->cw_bat); 
 	#endif
 	#endif
-
+	//cw_bat->voltage
+	g_cw2217_capacity = cw_bat->ui_soc;
+    g_cw2217_vol = cw_bat->voltage;
+	g_cw2217_present = cw_bat->voltage <= 0 ? 0 : 1;
+    g_cw2217_temp = cw_convert_temp(cw_bat->temp);
+	g_cw2217_health = POWER_SUPPLY_HEALTH_GOOD;
 	queue_delayed_work(cw_bat->cwfg_workqueue, &cw_bat->battery_delay_work, msecs_to_jiffies(queue_delayed_work_time));
 }
 
@@ -692,6 +745,25 @@ static int cw_battery_set_property(struct power_supply *psy,
 	return ret;
 }
 
+static int cw_convert_temp(int temp)
+{
+	int i,ret;
+
+	if(tempread[0] == tempread[SIZE_OF_TEMP-1])
+		return temp;
+	if(temp <= tempread[0])
+		return tempset[0];
+	if(temp >= tempread[SIZE_OF_TEMP-1])
+		return tempset[SIZE_OF_TEMP-1];
+	
+	for(i = 0;i < (SIZE_OF_TEMP-1);i++){
+		if((tempread[i] <= temp) && (temp <= tempread[i+1]))
+			break;
+	}
+	ret = tempset[i] + (tempset[i+1] - tempset[i])*(temp - tempread[i])/(tempread[i+1] - tempread[i]);
+	printk("%s : i=%d, ret=%d,temp=%d\n", __func__,i,ret,temp);
+	return ret;
+}
 static int cw_battery_get_property(struct power_supply *psy,
 				enum power_supply_property psp,
 				union power_supply_propval *val)
@@ -717,7 +789,7 @@ static int cw_battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:		// 3
 		val->intval = cw_bat->voltage <= 0 ? 0 : 1;
-//		g_cw2015_present=val->intval;
+//		g_cw221x_present=val->intval;
 		break;  
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:		// 12
 		val->intval = cw_bat->voltage * CW_VOL_UNIT;
@@ -729,13 +801,14 @@ static int cw_battery_get_property(struct power_supply *psy,
 		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:   // 46
-		val->intval = cw_bat->temp;
+		val->intval = cw_convert_temp(cw_bat->temp);
+//		val->intval = cw_bat->temp;
 		break;
 	default:
 		ret = -EINVAL; 
 		break;
 	}
-	printk("%s : psp=%d, val->intval=%d\n", __func__,psp,val->intval);
+//	printk("%s : psp=%d, val->intval=%d\n", __func__,psp,val->intval);
 
 	return ret;
 }
@@ -751,6 +824,137 @@ static enum power_supply_property cw_battery_properties[] = {
 	POWER_SUPPLY_PROP_TEMP,
 };
 #endif
+
+//prize-add-sunshuai-cw221x Multi-Battery Solution-20200222-start
+#if defined(CONFIG_MTK_CW2217_BATTERY_ID_AUXADC)
+int fgauge221x_get_profile_id(struct device_node *np){
+   int Voltiage_cali =0 ;
+   int val = 0;
+   int ret=0;
+	
+   if (of_property_read_u32(np, "bat_first_startrange", &val) >= 0)
+      cw221xfuelguage.bat_first_startrange = val;
+   else {
+      cw_printk("[%s] get  bat_first_startrange  fail\n", __func__);
+	}
+
+   if (of_property_read_u32(np, "bat_first_endrange", &val) >= 0)
+      cw221xfuelguage.bat_first_endrange = val;
+   else {
+	  cw_printk("[%s] get  bat_first_endrange  fail\n", __func__);
+	}
+
+   if (of_property_read_u32(np, "bat_second_startrange", &val) >= 0)
+		cw221xfuelguage.bat_second_startrange = val;
+   else {
+	   cw_printk("[%s] get  bat_second_startrange  fail\n", __func__);
+	}
+
+   if (of_property_read_u32(np, "bat_second_endrange", &val) >= 0)
+	   cw221xfuelguage.bat_second_endrange = val;
+   else {
+	   cw_printk("[%s] get  bat_second_endrange  fail\n", __func__);
+   }
+
+   if (of_property_read_u32(np, "bat_third_startrange", &val) >= 0)
+	   cw221xfuelguage.bat_third_startrange = val;
+   else {
+	   cw_printk("[%s] get  bat_third_startrange  fail\n", __func__);
+   }
+
+   if (of_property_read_u32(np, "bat_third_endrange", &val) >= 0)
+	   cw221xfuelguage.bat_third_endrange = val;
+   else {
+	   cw_printk("[%s] get  bat_third_endrange  fail\n", __func__);
+   }
+
+   if (of_property_read_u32(np, "bat_channel_num", &val) >= 0)
+	   cw221xfuelguage.bat_channel_num = val;
+   else {
+	   cw_printk("[%s] get  bat_channel_num  fail\n", __func__);
+   }
+   
+   if (of_property_read_u32(np, "first_bat_capacity", &val) >= 0)
+	   cw221xfuelguage.first_bat_capacity = val;
+   else {
+	   cw_printk("[%s] get  first_bat_capacity  fail\n", __func__);
+	   cw221xfuelguage.first_bat_capacity = 1000;
+   }
+
+   if (of_property_read_u32(np, "sec_bat_capacity", &val) >= 0)
+	   cw221xfuelguage.sec_bat_capacity = val;
+   else {
+	   cw_printk("[%s] get  sec_bat_capacity  fail\n", __func__);
+	   cw221xfuelguage.sec_bat_capacity = 1000;
+   }
+
+   if (of_property_read_u32(np, "third_bat_capacity", &val) >= 0)
+	   cw221xfuelguage.third_bat_capacity = val;
+   else {
+	   cw_printk("[%s] get  third_bat_capacity  fail\n", __func__);
+	   cw221xfuelguage.third_bat_capacity = 1000;
+   }
+   
+   cw_printk( "[cw221x] cw221xfuelguage.bat_first_startrange =%d \n",cw221xfuelguage.bat_first_startrange);
+   cw_printk( "[cw221x] cw221xfuelguage.bat_first_endrange =%d \n",cw221xfuelguage.bat_first_endrange);
+   cw_printk( "[cw221x] cw221xfuelguage.bat_second_startrange =%d \n",cw221xfuelguage.bat_second_startrange);
+   cw_printk( "[cw221x] cw221xfuelguage.bat_second_endrange =%d \n",cw221xfuelguage.bat_second_endrange);
+   cw_printk( "[cw221x] cw221xfuelguage.bat_third_startrange =%d \n",cw221xfuelguage.bat_third_startrange);
+   cw_printk( "[cw221x] cw221xfuelguage.bat_third_endrange =%d \n",cw221xfuelguage.bat_third_endrange);
+   cw_printk( "[cw221x] cw221xfuelguage.bat_channel_num =%d \n",cw221xfuelguage.bat_channel_num);
+   cw_printk( "[cw221x] cw221xfuelguage.first_bat_capacity =%d \n",cw221xfuelguage.first_bat_capacity);
+   cw_printk( "[cw221x] cw221xfuelguage.sec_bat_capacity =%d \n",cw221xfuelguage.sec_bat_capacity);
+   cw_printk( "[cw221x] cw221xfuelguage.third_bat_capacity =%d \n",cw221xfuelguage.third_bat_capacity);
+
+   Voltiage_cali = get_bat_id_voltage();
+   if (ret != 0){
+      cw_printk("[%s] channel[%d] info id_volt read fail\n", __func__,cw221xfuelguage.bat_channel_num);
+	  return -2;
+   }
+   else
+      cw_printk("[%s] channel[%d] info id_volt = %d\n", __func__, cw221xfuelguage.bat_channel_num,Voltiage_cali);
+  
+   if(Voltiage_cali > cw221xfuelguage.bat_first_startrange && Voltiage_cali < cw221xfuelguage.bat_first_endrange)
+	   cw221xfuelguage.bat_id = 0;
+   else if(Voltiage_cali > cw221xfuelguage.bat_second_startrange && Voltiage_cali < cw221xfuelguage.bat_second_endrange)
+	   cw221xfuelguage.bat_id = 1;
+   else if(Voltiage_cali > cw221xfuelguage.bat_third_startrange && Voltiage_cali < cw221xfuelguage.bat_third_endrange)
+	   cw221xfuelguage.bat_id = 2;
+   else{
+	   cw221xfuelguage.bat_id = 3;
+	   cw_printk( "[cw221x] cw221x_init did not find Curve corresponding to the battery ,use default Curve");
+   }
+		
+   cw_printk( "%s [cw221x]  Curve name %s",__func__,fuelguage_name[cw221xfuelguage.bat_id]);
+   cw_printk( "%s [cw221x]  cw221xfuelguage.bat_id = %d",__func__,cw221xfuelguage.bat_id);
+   
+   if(cw221xfuelguage.bat_id > 3 || cw221xfuelguage.bat_id < 0){
+	   cw_printk( "%s [cw221x] bat_id Invalid value ",__func__);
+	   return -3;
+   }
+
+   return 0;
+}
+
+
+int get_muilt_bat_capacity(void){
+	if(cw221xfuelguage.bat_id == 0){
+		cw_printk( "[cw221x]  user first_bat_capacity capacity = %d",cw221xfuelguage.first_bat_capacity);
+		return cw221xfuelguage.first_bat_capacity;
+	}else if(cw221xfuelguage.bat_id == 1){
+		cw_printk( "[cw221x]  user sec_bat_capacity capacity = %d",cw221xfuelguage.sec_bat_capacity);
+		return cw221xfuelguage.sec_bat_capacity;
+	}else if(cw221xfuelguage.bat_id == 2){
+		cw_printk( "[cw221x]  user third_bat_capacity capacity = %d",cw221xfuelguage.third_bat_capacity);
+		return cw221xfuelguage.third_bat_capacity;
+	}else{
+		cw_printk( "[cw221x]  default user first capacity = %d",cw221xfuelguage.first_bat_capacity);
+		return cw221xfuelguage.first_bat_capacity;
+	}
+}
+EXPORT_SYMBOL(get_muilt_bat_capacity);
+#endif
+//prize-add-sunshuai-cw221x Multi-Battery Solution-20200222-end
 
 static int cw221X_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -776,7 +980,63 @@ static int cw221X_probe(struct i2c_client *client, const struct i2c_device_id *i
 	}
 	i2c_set_clientdata(client, cw_bat);
 	cw_bat->client = client;
-
+	ret = cw_check_id(cw_bat);
+	if (ret) {
+		printk("%s : cw221X cw_check_id fail!\n", __func__);
+		devm_kfree(&client->dev,cw_bat);
+		cw_bat = NULL;
+		return ret;
+	}
+	np = client->dev.of_node;
+	if (np){
+		// prize-add-sunshuai-2217 Multi-Battery Solution-20200222-start
+#if defined(CONFIG_MTK_CW2217_BATTERY_ID_AUXADC)
+			if(fgauge221x_get_profile_id(np) == 0){
+				size = of_property_count_u8_elems(np,fuelguage_name[cw221xfuelguage.bat_id]);
+				cw_printk("cw_bat get %s batinfo size %d!\n",fuelguage_name[cw221xfuelguage.bat_id],size);
+				if (size == SIZE_OF_PROFILE){
+					ret = of_property_read_u8_array(np,fuelguage_name[cw221xfuelguage.bat_id],buf,size);
+					if (!ret){
+						memcpy(config_profile_info,buf,size);
+//						for(i=0;i<size;i++){
+//							printk("cw221x_probe get %s [%d] %x ",fuelguage_name[cw221xfuelguage.bat_id],i,config_info[i]);
+//					}
+					cw_printk("cw_bat get %s batinfo sucess size(%d)!\n",fuelguage_name[cw221xfuelguage.bat_id],size);
+					}else{
+						cw_printk("cw_bat get %s batinfo fail %d!\n",fuelguage_name[cw221xfuelguage.bat_id],ret);
+					}
+				}else{
+					cw_printk("cw_bat get %s batinfo size fail %d!\n",fuelguage_name[cw221xfuelguage.bat_id],size);
+				}
+			}
+#else
+		size = of_property_count_u8_elems(np,"batinfo");
+		printk("cw_bat get batinfo size %d!\n",size);
+		if (size == SIZE_OF_PROFILE){
+			ret = of_property_read_u8_array(np,"batinfo",buf,size);
+			if (!ret){
+				memcpy(config_profile_info,buf,size);
+				//for(i=0;i<size;i++){
+				//	pr_debug("cw221x_probe[%d] %x ",i,config_profile_info[i]);
+				//}
+				printk("cw_bat get batinfo sucess size(%d)!\n",size);
+			}else{
+				printk("cw_bat get batinfo fail %d!\n",ret);
+			}
+		}else{
+			printk("cw_bat get batinfo size fail %d!\n",size);
+		}
+#endif
+		ret = of_property_read_u32_array(np,"tempset",tempset,SIZE_OF_TEMP);
+		if (ret)
+			printk("cw_bat get tempset none %d!\n",ret);
+		ret = of_property_read_u32_array(np,"tempread",tempread,SIZE_OF_TEMP);
+		if (ret)
+			printk("cw_bat get tempread none %d!\n",ret);
+		if(tempread[0] != tempread[SIZE_OF_TEMP-1])
+			for(i = 0; i < SIZE_OF_TEMP; i++)
+				printk("%d, %d\n",tempset[i],tempread[i]);
+	}
 	ret = cw_init(cw_bat);
 	while ((loop++ < CW_RETRY_COUNT) && (ret != 0)) {
 		msleep(CW_SLEEP_200MS);
@@ -787,25 +1047,6 @@ static int cw221X_probe(struct i2c_client *client, const struct i2c_device_id *i
 		devm_kfree(&client->dev,cw_bat);
 		cw_bat = NULL;
 		return ret;
-	}
-	np = client->dev.of_node;
-	if (np){
-		size = of_property_count_u8_elems(np,"batinfo");
-		printk("cw_bat get batinfo size %d!\n",size);
-		if (size == SIZE_OF_PROFILE){
-			ret = of_property_read_u8_array(np,"batinfo",buf,size);
-			if (!ret){
-				memcpy(config_profile_info,buf,size);
-				for(i=0;i<size;i++){
-					printk("cw2015_probe[%d] %x ",i,config_profile_info[i]);
-				}
-				printk("cw_bat get batinfo sucess size(%d)!\n",size);
-			}else{
-				printk("cw_bat get batinfo fail %d!\n",ret);
-			}
-		}else{
-			printk("cw_bat get batinfo size fail %d!\n",size);
-		}
 	}
 
 	ret = cw_init_data(cw_bat);
@@ -859,6 +1100,7 @@ static int cw221X_probe(struct i2c_client *client, const struct i2c_device_id *i
 #endif
 //prize add by lipengpeng 20220719 end 	
 	printk("cw221X driver probe success!\n");
+	cw2217_exit_flag = 1;
 
 	return 0;
 }
@@ -938,7 +1180,7 @@ static void __exit cw221X_exit(void)
 	i2c_del_driver(&cw221X_driver);
 }
 
-module_init(cw221X_init);
+late_initcall(cw221X_init);
 module_exit(cw221X_exit);
 
 MODULE_AUTHOR("Cellwise FAE");

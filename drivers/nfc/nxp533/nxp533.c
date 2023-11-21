@@ -98,7 +98,6 @@ static  struct pinctrl_state *st_eint_int = NULL;
 static void pn547_enable_irq(struct pn547_dev *pn547_dev)
 {
 	unsigned long flags;
-	printk("rudy %s:%d\n",__func__,__LINE__);
 	//printk("%s--%d\n", __func__,__LINE__);
 	spin_lock_irqsave(&pn547_dev->irq_enabled_lock, flags);
 	if (!pn547_dev->irq_enabled)
@@ -112,7 +111,6 @@ static void pn547_enable_irq(struct pn547_dev *pn547_dev)
 static void pn547_disable_irq(struct pn547_dev *pn547_dev)
 {
 	unsigned long flags;
-	printk("rudy %s:%d\n",__func__,__LINE__);
 	//printk("%s--%d\n", __func__,__LINE__);
 	spin_lock_irqsave(&pn547_dev->irq_enabled_lock, flags);
 	if (pn547_dev->irq_enabled)
@@ -126,7 +124,6 @@ static void pn547_disable_irq(struct pn547_dev *pn547_dev)
 static irqreturn_t pn547_dev_irq_handler(int irq, void *dev)
 {
 	struct pn547_dev *pn547_dev = dev;
-	printk("rudy %s:%d\n",__func__,__LINE__);
 	pn547_disable_irq(pn547_dev);
 	/* Wake up waiting readers */
 	wake_up(&pn547_dev->read_wq);
@@ -153,7 +150,6 @@ static ssize_t pn547_dev_read(struct file *filp, char __user *buf,
 	unsigned char *I2CDMAReadBuf = NULL;
 	int ret=0;
 	//printk("%s\n", __func__);
-	printk("rudy %s:%d\n",__func__,__LINE__);
 
 	if (count > MAX_BUFFER_SIZE)
 		count = MAX_BUFFER_SIZE;
@@ -235,7 +231,6 @@ static ssize_t pn547_dev_write(struct file *filp, const char __user *buf,
 	struct pn547_dev *pn547_dev;
 	int ret=0; //baker_mod_w=0;
 	unsigned char *I2CDMAWriteBuf = NULL;
-	printk("rudy %s:%d\n",__func__,__LINE__);
 
 	//printk("%s\n", __func__);
 
@@ -280,7 +275,6 @@ static int pn547_dev_open(struct inode *inode, struct file *filp)
 	int ret = 0;
 	struct pn547_dev *pn547_dev = container_of(filp->private_data, struct pn547_dev, pn547_device);
 
-	printk("rudy %s:%d\n",__func__,__LINE__);
 	//printk("%s:pn547_dev=%p\n", __func__, pn547_dev);
 
 	filp->private_data = pn547_dev;
@@ -296,7 +290,6 @@ static long pn547_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 	int ret;
 	struct pn547_dev *pn547_dev = filp->private_data;
 
-	printk("rudy %s:%d\n",__func__,__LINE__);
 	printk("%s:cmd=%d,PN547_SET_PWR = %d, arg=%ld, pn547_dev=%p\n", __func__, cmd,PN547_SET_PWR, arg, pn547_dev);
 
 	switch (cmd)
@@ -547,6 +540,32 @@ done:
 	return ret;
 }
 
+//drv add by liuxuhui for nxp nfc start -- 20230912
+#define NXP_STATUS
+
+#ifdef NXP_STATUS
+static int nxp_nfc_driver_status = 0;
+
+static ssize_t nxp_chip_status_show(struct device* dev,
+                                      struct device_attribute* attr, char* buf)
+{
+    int len = 0;
+    len += sprintf((char*)buf, "%d\n", nxp_nfc_driver_status);
+    return len;
+}
+
+static DEVICE_ATTR(nfc_chip_status, S_IRUGO | S_IWUSR, nxp_chip_status_show, NULL);
+
+static struct attribute *nfc_sysfs_entries[] = {
+        &dev_attr_nfc_chip_status.attr,
+    NULL
+};
+
+static struct attribute_group nfc_attribute_group = {
+    .attrs = nfc_sysfs_entries,
+};
+#endif
+//drv add by liuxuhui for nxp nfc end -- 20230912
 static int pn547_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
@@ -662,6 +681,10 @@ static int pn547_probe(struct i2c_client *client,
 	}
 
 	i2c_set_clientdata(client, pn547_dev);
+//drv add by liuxuhui for nxp nfc start -- 20230912
+        ret = sysfs_create_group(&pn547_dev->pn547_device.this_device->kobj, &nfc_attribute_group);
+        nxp_nfc_driver_status = 1;
+//drv add by liuxuhui for nxp nfc end -- 20230912
 	
 	//prize add by huarui 20201014 start
 	#if defined(CONFIG_HISENSE_PRODUCT_DEVINFO)

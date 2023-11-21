@@ -1,6 +1,5 @@
 config MANUFACTOR_NFC_NXP533
-	tristate "NXP PN533 NFC driver"
-	default n
+	bool "NXP PN533 NFC driver"
 	help
 	  NXP PN547 core driver.
 	  This is a driver based on the HCI NFC kernel layers and

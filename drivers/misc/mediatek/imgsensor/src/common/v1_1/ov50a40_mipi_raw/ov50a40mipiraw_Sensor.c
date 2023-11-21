@@ -236,7 +236,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.custom4_delay_frame = 2,		//enter custom4 delay frame num
 	.custom5_delay_frame = 2,		//enter custom5 delay frame num
 
-	.isp_driving_current = ISP_DRIVING_8MA,
+	.isp_driving_current = ISP_DRIVING_4MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_CPHY, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = 1,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
@@ -257,7 +257,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	
 	.mipi_lane_num = SENSOR_MIPI_3_LANE,
 	.i2c_addr_table = {0x20,0xff},
-	.i2c_speed = 400,// i2c read/write speed
+	.i2c_speed = 1000,// i2c read/write speed
 	.mipi_hs_taril_value = 100 , // prize add by zhuzhengjiang for mipi hs_trail_value 20210619
 };
 

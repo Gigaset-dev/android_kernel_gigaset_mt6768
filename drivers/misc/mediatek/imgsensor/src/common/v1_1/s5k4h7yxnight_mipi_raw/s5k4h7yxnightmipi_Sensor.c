@@ -962,8 +962,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id() + 2;
 			printk("fsd---4h7 sensor id is %d\n",*sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				/* return ERROR_NONE; */
-				break;
+				return ERROR_NONE;
+				//break;
 			}
 			retry--;
 		} while (retry > 0);

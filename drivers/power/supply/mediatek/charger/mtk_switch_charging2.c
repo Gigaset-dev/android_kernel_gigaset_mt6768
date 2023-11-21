@@ -334,7 +334,16 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			printk("PRIZE master  charge current %d:%d\n",pdata->input_current_limit,pdata->charging_current_limit);	
 	//prize add by sunshuai for Bright screen current limit  for master charge	2019-0429 end
 #endif
-	//prize add by lipengpeng 20210616 end 
+
+//prize add by huangjiwu 20210723 start 
+#ifdef CONFIG_PRIZE_BATTERY_HIGTEMP_CTRL
+	if(battery_get_bat_temperature() < (-1))
+	{
+			pdata->input_current_limit = 800000;
+			pdata->charging_current_limit = 800000;
+	}
+#endif
+//prize add by huangjiwu 20210616 end 
 
 	sc_select_charging_current(info, pdata);
 

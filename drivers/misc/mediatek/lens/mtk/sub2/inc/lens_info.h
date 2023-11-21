@@ -56,6 +56,7 @@
 //prize add for aw86014af zhuzhengjiang 20210722 start
 #define AFDRV_AW86014AF "AW86014AF"
 #define AFDRV_DW9718SAF "DW9718SAF"
+#define AFDRV_AW86017CSRAF "AW86017CSRAF"
 //prize add for aw86014af zhuzhengjiang 20210722 end
 
 #define CONVERT_CCU_TIMESTAMP 0x1000

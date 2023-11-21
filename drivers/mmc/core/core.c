@@ -1261,6 +1261,7 @@ int mmc_cqe_start_req(struct mmc_host *host, struct mmc_request *mrq)
 		goto out_err;
 
 	err = host->cqe_ops->cqe_request(host, mrq);
+
 	if (err)
 		goto out_err;
 

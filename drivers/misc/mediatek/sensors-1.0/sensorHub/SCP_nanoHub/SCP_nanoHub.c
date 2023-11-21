@@ -2178,16 +2178,6 @@ int sensor_set_cmd_to_hub(uint8_t sensorType,
 			len = offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ,
 				custData) + sizeof(req.set_cust_req.getInfo);
 			break;
-/* Prize add by gongtaitao for sar sensor hardware info 20220707 begin */
-#ifdef CONFIG_SENSORHUB_PRIZE_HARDWARE_INFO
-		case CUST_ACTION_GET_PRIZE_HARDWARE_INFO:
-			req.set_cust_req.gethardwareInfo.action =
-				CUST_ACTION_GET_PRIZE_HARDWARE_INFO;
-			len = offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ, custData)
-				+ sizeof(req.set_cust_req.gethardwareInfo);
-			break;
-#endif
-/* Prize add by gongtaitao for sar sensor hardware info 20220707 end */
 		default:
 			return -1;
 		}
@@ -2250,13 +2240,12 @@ int sensor_set_cmd_to_hub(uint8_t sensorType,
 	}
 	return err;
 }
-	
 #if defined(CONFIG_MTK_SAR_HUB)
 /* prize add by liaoxingen for plug usb/accdet sar cali start */
-void sar_sensor_calibration_to_hub(void)
+void sar_sensor_calibration_to_hub(void)                                                                                                                                                                                                                                      
 {
-	printk("sar_sensor_calibration_to_hub");
-	sensor_calibration_to_hub(ID_SAR);
+    printk("sar_sensor_calibration_to_hub");
+    sensor_calibration_to_hub(ID_SAR);
 }
 EXPORT_SYMBOL(sar_sensor_calibration_to_hub);
 /* prize add by liaoxingen for plug usb/accdet sar cali end */

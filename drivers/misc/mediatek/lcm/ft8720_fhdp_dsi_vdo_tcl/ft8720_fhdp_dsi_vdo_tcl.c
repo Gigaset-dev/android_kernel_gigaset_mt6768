@@ -52,6 +52,7 @@ static struct LCM_UTIL_FUNCS lcm_util;
 	lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 
 static const unsigned char LCD_MODULE_ID = 0x01;
+extern int tp_gesture_flag;
 /* --------------------------------------------------------------------------- */
 /* Local Constants */
 /* --------------------------------------------------------------------------- */
@@ -606,10 +607,18 @@ static void lcm_init(void)
 static void lcm_suspend(void)
 {
 	push_table(lcm_suspend_setting,sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
-	display_bias_disable();
-	MDELAY(10);
-	SET_RESET_PIN(0);
-	MDELAY(10);
+	if (tp_gesture_flag) {
+		//display_bias_disable();
+		//MDELAY(10);
+		SET_RESET_PIN(0);
+		MDELAY(10);	
+	} else {
+		display_bias_disable();
+		MDELAY(10);
+		SET_RESET_PIN(0);
+		MDELAY(10);
+	}
+
 }
 
 static void lcm_resume(void)
@@ -624,7 +633,7 @@ static void lcm_init_power(void)
 
 static void lcm_suspend_power(void)
 {
-	display_bias_disable();
+	//display_bias_disable();
 }
 
 static void lcm_resume_power(void)

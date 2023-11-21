@@ -1087,9 +1087,33 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF("enable: %d\n", enable);
 	if (enable) {
+		write_cmos_sensor(0xfc, 0x00);
+		write_cmos_sensor(0xf7, 0x9d);
+		write_cmos_sensor(0xfc, 0x00);
+		write_cmos_sensor(0xfc, 0xfe);
+		write_cmos_sensor(0xfe, 0x03);
+		write_cmos_sensor(0x21, 0x02);
+		write_cmos_sensor(0x22, 0x03);
+		write_cmos_sensor(0x23, 0x0a);
+		write_cmos_sensor(0x26, 0x04);
+		write_cmos_sensor(0x29, 0x04);
+		write_cmos_sensor(0x2a, 0x02);
+		write_cmos_sensor(0x2b, 0x04);
 		write_cmos_sensor(0xfe, 0x00);
 		write_cmos_sensor(0x8c, 0x01);
 	} else {
+		write_cmos_sensor(0xfc, 0x00);
+		write_cmos_sensor(0xf7, 0x95);
+		write_cmos_sensor(0xfc, 0x00);
+		write_cmos_sensor(0xfc, 0xee);
+		write_cmos_sensor(0xfe, 0x03);
+		write_cmos_sensor(0x21, 0x05);
+		write_cmos_sensor(0x22, 0x06);
+		write_cmos_sensor(0x23, 0x2b);
+		write_cmos_sensor(0x26, 0x07);
+		write_cmos_sensor(0x29, 0x07);
+		write_cmos_sensor(0x2a, 0x12);
+		write_cmos_sensor(0x2b, 0x07);
 		write_cmos_sensor(0xfe, 0x00);
 		write_cmos_sensor(0x8c, 0x00);
 	}
@@ -1191,7 +1215,7 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 
-	gc8034mipi_otp_control();
+	//gc8034mipi_otp_control();
 
 	spin_lock(&imgsensor_drv_lock);
 

@@ -925,6 +925,10 @@ static int cw_battery_get_property(struct power_supply *psy,
             val->intval = POWER_SUPPLY_TECHNOLOGY_LION;	
             break;
 
+    case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+            val->intval = 4400000;
+            break;
+
     default:
             break;
     }
@@ -939,6 +943,7 @@ static enum power_supply_property cw_battery_properties[] = {
     POWER_SUPPLY_PROP_VOLTAGE_NOW,
     POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW,
     POWER_SUPPLY_PROP_TECHNOLOGY,
+    POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 };
 #endif 
 

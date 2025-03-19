@@ -618,6 +618,7 @@ static int battery_get_property(struct power_supply *psy,
 			}
 			val->intval = q_max_uah;
 		}
+		val->intval = 4400000;
 		break;
 
 

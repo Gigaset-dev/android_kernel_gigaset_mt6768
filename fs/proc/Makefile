@@ -37,5 +37,5 @@ proc-$(CONFIG_PRINTK)	+= kmsg.o
 proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
 
 # begin, prize-lifenfen-20180117, add for resmon
-proc-y	+= resmon.o
+# proc-y	+= resmon.o
 # end, prize-lifenfen-20180117, add for resmon

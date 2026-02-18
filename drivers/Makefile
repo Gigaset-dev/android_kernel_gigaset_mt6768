@@ -192,5 +192,5 @@ obj-$(CONFIG_SIOX)		+= siox/
 obj-$(CONFIG_GNSS)		+= gnss/
 obj-$(CONFIG_INTERCONNECT)     += interconnect/
 # begin, prize-lifenfen-20180117, add for resmon
-obj-y              += resmon/
+#obj-y              += resmon/
 # end, prize-lifenfen-20180117, add for resmon

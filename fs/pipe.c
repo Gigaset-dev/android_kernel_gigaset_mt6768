@@ -14,6 +14,7 @@
 #include <linux/fs.h>
 #include <linux/log2.h>
 #include <linux/mount.h>
+#include <linux/pseudo_fs.h>
 #include <linux/magic.h>
 #include <linux/pipe_fs_i.h>
 #include <linux/uio.h>
@@ -28,6 +29,21 @@
 #include <asm/ioctls.h>
 
 #include "internal.h"
+
+/*
+ * New pipe buffers will be restricted to this size while the user is exceeding
+ * their pipe buffer quota. The general pipe use case needs at least two
+ * buffers: one for data yet to be read, and one for new data. If this is less
+ * than two, then a write to a non-empty pipe may block even if the pipe is not
+ * full. This can occur with GNU make jobserver or similar uses of pipes as
+ * semaphores: multiple processes may be waiting to write tokens back to the
+ * pipe before reading tokens: https://lore.kernel.org/lkml/1628086770.5rn8p04n6j.none@localhost/.
+ *
+ * Users can reduce their pipe buffers with F_SETPIPE_SZ below this at their
+ * own risk, namely: pipe writes to non-full pipes may block until the pipe is
+ * emptied.
+ */
+#define PIPE_MIN_DEF_BUFFERS 2
 
 /*
  * The max size that a non-root user is allowed to grow the pipe. Can
@@ -654,8 +670,8 @@ struct pipe_inode_info *alloc_pipe_info(void)
 	user_bufs = account_pipe_buffers(user, 0, pipe_bufs);
 
 	if (too_many_pipe_buffers_soft(user_bufs) && is_unprivileged_user()) {
-		user_bufs = account_pipe_buffers(user, pipe_bufs, 1);
-		pipe_bufs = 1;
+		user_bufs = account_pipe_buffers(user, pipe_bufs, PIPE_MIN_DEF_BUFFERS);
+		pipe_bufs = PIPE_MIN_DEF_BUFFERS;
 	}
 
 	if (too_many_pipe_buffers_hard(user_bufs) && is_unprivileged_user())
@@ -1171,16 +1187,20 @@ static const struct super_operations pipefs_ops = {
  * any operations on the root directory. However, we need a non-trivial
  * d_name - pipe: will go nicely and kill the special-casing in procfs.
  */
-static struct dentry *pipefs_mount(struct file_system_type *fs_type,
-			 int flags, const char *dev_name, void *data)
+
+static int pipefs_init_fs_context(struct fs_context *fc)
 {
-	return mount_pseudo(fs_type, "pipe:", &pipefs_ops,
-			&pipefs_dentry_operations, PIPEFS_MAGIC);
+	struct pseudo_fs_context *ctx = init_pseudo(fc, PIPEFS_MAGIC);
+	if (!ctx)
+		return -ENOMEM;
+	ctx->ops = &pipefs_ops;
+	ctx->dops = &pipefs_dentry_operations;
+	return 0;
 }
 
 static struct file_system_type pipe_fs_type = {
 	.name		= "pipefs",
-	.mount		= pipefs_mount,
+	.init_fs_context = pipefs_init_fs_context,
 	.kill_sb	= kill_anon_super,
 };
 

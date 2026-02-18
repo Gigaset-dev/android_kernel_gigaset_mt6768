@@ -1676,6 +1676,7 @@ static void qede_sync_free_irqs(struct qede_dev *edev)
 	}
 
 	edev->int_info.used_cnt = 0;
+	edev->int_info.msix_cnt = 0;
 }
 
 static int qede_req_msix_irqs(struct qede_dev *edev)
@@ -2017,12 +2018,8 @@ static int qede_start_queues(struct qede_dev *edev, bool clear_stats)
 			if (rc)
 				goto out;
 
-			fp->rxq->xdp_prog = bpf_prog_add(edev->xdp_prog, 1);
-			if (IS_ERR(fp->rxq->xdp_prog)) {
-				rc = PTR_ERR(fp->rxq->xdp_prog);
-				fp->rxq->xdp_prog = NULL;
-				goto out;
-			}
+			bpf_prog_add(edev->xdp_prog, 1);
+			fp->rxq->xdp_prog = edev->xdp_prog;
 		}
 
 		if (fp->type & QEDE_FASTPATH_TX) {
@@ -2193,7 +2190,6 @@ static int qede_load(struct qede_dev *edev, enum qede_load_mode mode,
 	goto out;
 err4:
 	qede_sync_free_irqs(edev);
-	memset(&edev->int_info.msix_cnt, 0, sizeof(struct qed_int_info));
 err3:
 	qede_napi_disable_remove(edev);
 err2:

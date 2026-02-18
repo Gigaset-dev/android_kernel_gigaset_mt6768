@@ -13,6 +13,15 @@
 #include <linux/const.h>
 #include <asm/proc-fns.h>
 
+#ifndef __ASSEMBLY__
+/*
+ * ZERO_PAGE is a global shared page that is always zero: used
+ * for zero-mapped memory areas etc..
+ */
+extern struct page *empty_zero_page;
+#define ZERO_PAGE(vaddr)	(empty_zero_page)
+#endif
+
 #ifndef CONFIG_MMU
 
 #include <asm-generic/4level-fixup.h>
@@ -166,13 +175,6 @@ extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
 #define __S111  __PAGE_SHARED_EXEC
 
 #ifndef __ASSEMBLY__
-/*
- * ZERO_PAGE is a global shared page that is always zero: used
- * for zero-mapped memory areas etc..
- */
-extern struct page *empty_zero_page;
-#define ZERO_PAGE(vaddr)	(empty_zero_page)
-
 
 extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
 
@@ -366,7 +368,6 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
 /* FIXME: this is not correct */
 #define kern_addr_valid(addr)	(1)
 
-#include <asm-generic/pgtable.h>
 
 /*
  * We provide our own arch_get_unmapped_area to cope with VIPT caches.
@@ -375,24 +376,6 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
 #define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
 
 #define pgtable_cache_init() do { } while (0)
-
-#if defined(CONFIG_ARCH_HAS_PTE_SPECIAL) && !defined(CONFIG_ARM_LPAE)
-#define spf_pxd_flunked spf_pxd_flunked
-static inline bool spf_pgd_flunked(pgd_t *pgd)
-{
-	if (pgd_none(*pgd) || unlikely(pgd_bad(*pgd)))
-		return true;
-
-	return false;
-}
-static inline bool spf_p4d_flunked(p4d_t *p4d)
-{
-	if (p4d_none(*p4d) || unlikely(p4d_bad(*p4d)))
-		return true;
-
-	return false;
-}
-#endif
 
 #endif /* !__ASSEMBLY__ */
 

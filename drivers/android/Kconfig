@@ -54,14 +54,14 @@ config ANDROID_BINDER_IPC_SELFTEST
 	  exhaustively with combinations of various buffer sizes and
 	  alignments.
 
-config ANDROID_BINDER_USER_TRACKING
-	bool "Android Binder Transaction Tracking"
-	depends on ANDROID_BINDER_IPC
-	help
-	  Used for track abnormal binder transaction which is over 2 seconds,
-	  when the transaction is done or be free, this transaction would be
-	  checked whether it executed overtime.
-	  If yes, printing out the detailed info.
+config ANDROID_VENDOR_HOOKS
+	bool "Android Vendor Hooks"
+	depends on TRACEPOINTS
+	---help---
+	  Enable vendor hooks implemented as tracepoints
+
+	  Allow vendor modules to attach to tracepoint "hooks" defined via
+	  DECLARE_HOOK or DECLARE_RESTRICTED_HOOK.
 
 endif # if ANDROID
 

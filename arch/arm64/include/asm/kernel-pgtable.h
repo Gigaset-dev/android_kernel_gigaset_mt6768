@@ -19,7 +19,7 @@
 #ifndef __ASM_KERNEL_PGTABLE_H
 #define __ASM_KERNEL_PGTABLE_H
 
-#include <asm/pgtable.h>
+#include <linux/pgtable.h>
 #include <asm/sparsemem.h>
 
 /*
@@ -76,8 +76,8 @@
 #define EARLY_KASLR	(0)
 #endif
 
-#define EARLY_ENTRIES(vstart, vend, shift) (((vend) >> (shift)) \
-					- ((vstart) >> (shift)) + 1 + EARLY_KASLR)
+#define EARLY_ENTRIES(vstart, vend, shift) \
+	((((vend) - 1) >> (shift)) - ((vstart) >> (shift)) + 1 + EARLY_KASLR)
 
 #define EARLY_PGDS(vstart, vend) (EARLY_ENTRIES(vstart, vend, PGDIR_SHIFT))
 

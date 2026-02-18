@@ -54,7 +54,7 @@ static int kbase_kcpu_map_import_prepare(
 	lockdep_assert_held(&kctx->csf.kcpu_queues.lock);
 
 	/* Take the processes mmap lock */
-	down_read(kbase_mem_get_process_mmap_lock());
+	mmap_read_lock(current->mm);
 	kbase_gpu_vm_lock(kctx);
 
 	reg = kbase_region_tracker_find_region_enclosing_address(kctx,
@@ -76,7 +76,14 @@ static int kbase_kcpu_map_import_prepare(
 		 * on the physical pages tracking object. When the last
 		 * reference to the tracking object is dropped the pages
 		 * would be unpinned if they weren't unpinned before.
+		 *
+		 * Region should be CPU cached: abort if it isn't.
 		 */
+		if (WARN_ON(!(reg->flags & KBASE_REG_CPU_CACHED))) {
+			ret = -EINVAL;
+			goto out;
+		}
+
 		ret = kbase_jd_user_buf_pin_pages(kctx, reg);
 		if (ret)
 			goto out;
@@ -95,7 +102,7 @@ static int kbase_kcpu_map_import_prepare(
 out:
 	kbase_gpu_vm_unlock(kctx);
 	/* Release the processes mmap lock */
-	up_read(kbase_mem_get_process_mmap_lock());
+	mmap_read_unlock(current->mm);
 
 	return ret;
 }

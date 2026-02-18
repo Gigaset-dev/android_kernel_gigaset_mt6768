@@ -368,9 +368,6 @@ static const struct vm_operations_struct ext4_file_vm_ops = {
 	.fault		= ext4_filemap_fault,
 	.map_pages	= filemap_map_pages,
 	.page_mkwrite   = ext4_page_mkwrite,
-#ifdef CONFIG_SPECULATIVE_PAGE_FAULT
-	.suitable_for_spf = true,
-#endif
 };
 
 static int ext4_file_mmap(struct file *file, struct vm_area_struct *vma)
@@ -508,6 +505,12 @@ loff_t ext4_llseek(struct file *file, loff_t offset, int whence)
 		inode_unlock_shared(inode);
 		break;
 	}
+	/*
+	 * Make sure inline data cannot be created anymore since we are going
+	 * to allocate blocks for DIO. We know the inode does not have any
+	 * inline data now because ext4_dio_supported() checked for that.
+	 */
+	ext4_clear_inode_state(inode, EXT4_STATE_MAY_INLINE_DATA);
 
 	if (offset < 0)
 		return offset;

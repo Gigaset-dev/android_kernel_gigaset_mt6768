@@ -21,12 +21,19 @@
 #include <linux/highmem.h>
 #include <linux/perf_event.h>
 
-#include <asm/pgtable.h>
+#include <linux/pgtable.h>
 #include <asm/system_misc.h>
 #include <asm/system_info.h>
 #include <asm/tlbflush.h>
 
 #include "fault.h"
+
+bool copy_from_kernel_nofault_allowed(const void *unsafe_src, size_t size)
+{
+	unsigned long addr = (unsigned long)unsafe_src;
+
+	return addr >= TASK_SIZE && ULONG_MAX - addr >= size;
+}
 
 #ifdef CONFIG_MMU
 
@@ -149,7 +156,7 @@ __do_kernel_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
 	show_pte(mm, addr);
 	die("Oops", regs, fsr);
 	bust_spinlocks(0);
-	do_exit(SIGKILL);
+	make_task_dead(SIGKILL);
 }
 
 /*
@@ -206,20 +213,6 @@ void do_bad_area(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 #ifdef CONFIG_MMU
 #define VM_FAULT_BADMAP		0x010000
 #define VM_FAULT_BADACCESS	0x020000
-
-#ifdef CONFIG_SPECULATIVE_PAGE_FAULT
-bool __access_error(unsigned long fsr, unsigned long vma_flags)
-{
-	unsigned int mask = VM_READ | VM_WRITE | VM_EXEC;
-
-	if ((fsr & FSR_WRITE) && !(fsr & FSR_CM))
-		mask = VM_WRITE;
-	if (fsr & FSR_LNX_PF)
-		mask = VM_EXEC;
-
-	return vma_flags & mask ? false : true;
-}
-#endif
 
 /*
  * Check that the permissions on the VMA allow for the fault which occurred.
@@ -305,23 +298,15 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 		flags |= FAULT_FLAG_WRITE;
 
 	/*
-	 * let's try a speculative page fault without grabbing the
-	 * mmap_sem.
-	 */
-	fault = handle_speculative_fault(mm, addr, flags, (unsigned long)fsr);
-	if (fault != VM_FAULT_RETRY)
-		goto done;
-
-	/*
 	 * As per x86, we may deadlock here.  However, since the kernel only
 	 * validly references user space from well defined areas of the code,
 	 * we can bug out early if this is from code which shouldn't.
 	 */
-	if (!down_read_trylock(&mm->mmap_sem)) {
+	if (!mmap_read_trylock(mm)) {
 		if (!user_mode(regs) && !search_exception_tables(regs->ARM_pc))
 			goto no_context;
 retry:
-		down_read(&mm->mmap_sem);
+		mmap_read_lock(mm);
 	} else {
 		/*
 		 * The above down_read_trylock() might have succeeded in
@@ -342,7 +327,7 @@ retry:
 	 * signal first. We do not need to release the mmap_sem because
 	 * it would already be released in __lock_page_or_retry in
 	 * mm/filemap.c. */
-	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current)) {
+	if (fault_signal_pending(fault, regs)) {
 		if (!user_mode(regs))
 			goto no_context;
 		return 0;
@@ -374,9 +359,8 @@ retry:
 		}
 	}
 
-	up_read(&mm->mmap_sem);
+	mmap_read_unlock(mm);
 
-done:
 	/*
 	 * Handle the "normal" case first - VM_FAULT_MAJOR
 	 */
@@ -616,6 +600,7 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
 	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs))
 		return;
 
+	pr_alert("8<--- cut here ---\n");
 	pr_alert("Unhandled prefetch abort: %s (0x%03x) at 0x%08lx\n",
 		inf->name, ifsr, addr);
 

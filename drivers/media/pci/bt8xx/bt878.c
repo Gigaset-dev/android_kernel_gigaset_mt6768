@@ -32,7 +32,7 @@
 #include <linux/pci.h>
 #include <asm/io.h>
 #include <linux/ioport.h>
-#include <asm/pgtable.h>
+#include <linux/pgtable.h>
 #include <asm/page.h>
 #include <linux/types.h>
 #include <linux/interrupt.h>
@@ -493,6 +493,9 @@ static int bt878_probe(struct pci_dev *dev, const struct pci_device_id *pci_id)
 	bt878_make_risc(bt);
 	btwrite(0, BT878_AINT_MASK);
 	bt878_num++;
+
+	if (!bt->tasklet.func)
+		tasklet_disable(&bt->tasklet);
 
 	return 0;
 

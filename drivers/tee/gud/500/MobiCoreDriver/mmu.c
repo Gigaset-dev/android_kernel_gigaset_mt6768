@@ -73,11 +73,11 @@ static inline long gup_local(struct mm_struct *mm, uintptr_t start,
 {
 	unsigned int gup_flags = 0;
 
-	gup_flags |= FOLL_LONGTERM;
 	if (write)
 		gup_flags |= FOLL_WRITE;
 
-	return get_user_pages(start, nr_pages, gup_flags, pages, NULL);
+	return get_user_pages_remote(NULL, mm, start, nr_pages, gup_flags,
+			pages, NULL, NULL);
 }
 
 static inline long gup_local_repeat(struct mm_struct *mm, uintptr_t start,
@@ -429,7 +429,7 @@ struct tee_mmu *tee_mmu_create(struct mm_struct *mm,
 			long gup_ret;
 
 			/* Buffer was allocated in user space */
-			down_read(&mm->mmap_sem);
+			mmap_read_lock(mm);
 			/*
 			 * Always try to map read/write from a Linux PoV, so
 			 * Linux creates (page faults) the underlying pages if
@@ -447,7 +447,7 @@ struct tee_mmu *tee_mmu_create(struct mm_struct *mm,
 							   (uintptr_t)reader,
 							   nr_pages, 0, pages);
 			}
-			up_read(&mm->mmap_sem);
+			mmap_read_unlock(mm);
 			if (gup_ret < 0) {
 				ret = gup_ret;
 				mc_dev_err(ret, "failed to get user pages @%p",

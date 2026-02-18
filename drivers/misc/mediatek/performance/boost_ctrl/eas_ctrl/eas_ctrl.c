@@ -46,10 +46,10 @@ static unsigned long prefer_idle[NR_CGROUP];
 static int  perf_sched_stune_task_thresh;
 static int debug_fix_boost;
 static int debug_boost_value[NR_CGROUP];
-/* log */
-static int log_enable;
 
 #ifdef CONFIG_SCHED_TUNE
+/* log */
+static int log_enable;
 static int current_boost_value[NR_CGROUP];
 static unsigned long policy_mask[NR_CGROUP];
 #endif
@@ -240,11 +240,7 @@ static int perfmgr_sched_isolated_proc_show(struct seq_file *m, void *v)
 #ifdef MTK_K14_EAS_BOOST
 static void walt_mode(int enable)
 {
-#ifdef CONFIG_SCHED_WALT
-	sched_walt_enable(LT_WALT_POWERHAL, enable);
-#else
 	pr_debug("walt not be configured\n");
-#endif
 }
 
 void ext_launch_start(void)

@@ -178,9 +178,13 @@ void ftrace_likely_update(struct ftrace_likely_data *f, int val,
 })
 #endif /* CONFIG_DEBUG_ENTRY */
 
+/* Annotate a C jump table to allow objtool to follow the code flow */
+#define __annotate_jump_table __section(".rodata..c_jump_table")
+
 #else
 #define annotate_reachable()
 #define annotate_unreachable()
+#define __annotate_jump_table
 #endif
 
 #ifndef instrumentation_begin
@@ -227,6 +231,8 @@ void ftrace_likely_update(struct ftrace_likely_data *f, int val,
      __ptr = (unsigned long) (ptr);				\
     (typeof(ptr)) (__ptr + (off)); })
 #endif
+
+#define absolute_pointer(val)	RELOC_HIDE((void *)(val), 0)
 
 #ifndef OPTIMIZER_HIDE_VAR
 /* Make the optimizer believe the variable can be manipulated arbitrarily. */

@@ -49,7 +49,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /*
 	RGX Device Virtual Address Space Definitions:
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> mtk-4.19/android-4.19.y-mediatek
 	RGX_PDSCODEDATA_HEAP_BASE and RGX_USCCODE_HEAP_BASE will be programmed, on a
 	global basis, into RGX_CR_PDS_EXEC_BASE and RGX_CR_USC_CODE_BASE_*
 	respectively. Therefore if clients use multiple configs they must still be

@@ -49,10 +49,7 @@ static int log_enable;
 #include "eas_ctrl.h"
 #include "topo_ctrl.h"
 
-#if defined(CONFIG_MTK_PLAT_MT6885_EMULATION) || defined(CONFIG_MACH_MT6893) \
-	|| defined(CONFIG_MACH_MT6833)
 #define CONFIG_CPUFREQ_HAVE_GOVERNOR_PER_POLICY
-#endif
 
 #if defined(CONFIG_CPUFREQ_HAVE_GOVERNOR_PER_POLICY)
 static int cluster_num;
@@ -1216,10 +1213,13 @@ PROC_FOPS_RW(perfmgr_log);
 int uclamp_ctrl_init(struct proc_dir_entry *parent)
 {
 #ifdef CONFIG_MTK_SCHED_EXTENSION
-	int i, ret = 0;
+	int ret = 0;
 	size_t idx;
 #if defined(CONFIG_UCLAMP_TASK_GROUP) && defined(CONFIG_SCHED_TUNE)
 	int j;
+#endif
+#if defined(MTK_K14_EAS_BOOST) || (defined(CONFIG_UCLAMP_TASK_GROUP) && defined(CONFIG_SCHED_TUNE))
+	int i;
 #endif
 	struct pentry {
 		const char *name;

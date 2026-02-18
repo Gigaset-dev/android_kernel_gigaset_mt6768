@@ -174,20 +174,30 @@ int PVRSRVDriverInit(void)
 
 /* MTK: use procfs first */
 #if defined(CONFIG_PROC_FS)
+<<<<<<< HEAD
 	PVR_DPF((PVR_DBG_ERROR, "%s:CONFIG_PROC_FS",__func__));
+=======
+>>>>>>> mtk-4.19/android-4.19.y-mediatek
 	error = PVRProcFsRegister();
 	if (error != PVRSRV_OK)
 	{
 		return -ENOMEM;
 	}
 #elif defined(CONFIG_DEBUG_FS)
+<<<<<<< HEAD
 	PVR_DPF((PVR_DBG_ERROR, "%s:CONFIG_DEBUG_FS",__func__));
+=======
+>>>>>>> mtk-4.19/android-4.19.y-mediatek
 	error = PVRDebugFsRegister();
 	if (error != PVRSRV_OK)
 	{
 		return -ENOMEM;
 	}
 #endif /* defined(CONFIG_PROC_FS) || defined(CONFIG_DEBUG_FS) */
+<<<<<<< HEAD
+=======
+
+>>>>>>> mtk-4.19/android-4.19.y-mediatek
 #if defined(PVRSRV_ENABLE_PROCESS_STATS)
 	error = PVRSRVStatsInitialise();
 	if (error != PVRSRV_OK)

@@ -234,8 +234,6 @@ struct sve_context {
 	(SVE_SIG_FFR_OFFSET(vq) + SVE_SIG_FFR_SIZE(vq) - SVE_SIG_REGS_OFFSET)
 
 #define SVE_SIG_CONTEXT_SIZE(vq) (SVE_SIG_REGS_OFFSET + SVE_SIG_REGS_SIZE(vq))
-
-
 #else /* CONFIG_64BIT */
 
 /*
@@ -267,4 +265,5 @@ struct sigcontext {
 	unsigned long fault_address;
 };
 #endif /* CONFIG_64BIT */
+
 #endif /* _UAPI__ASM_SIGCONTEXT_H */

@@ -98,7 +98,7 @@ alternative_cb_end
 #include <asm/cache.h>
 #include <asm/cacheflush.h>
 #include <asm/mmu_context.h>
-#include <asm/pgtable.h>
+#include <linux/pgtable.h>
 
 void kvm_update_va_mask(struct alt_instr *alt,
 			__le32 *origptr, __le32 *updptr, int nr_inst);
@@ -439,7 +439,8 @@ static inline void *kvm_get_hyp_vector(void)
 	int slot = -1;
 
 	if ((cpus_have_const_cap(ARM64_HARDEN_BRANCH_PREDICTOR) ||
-	     cpus_have_const_cap(ARM64_SPECTRE_BHB)) && data->template_start) {
+	     cpus_have_const_cap(ARM64_SPECTRE_BHB)) &&
+	    data && data->template_start) {
 		vect = kern_hyp_va(kvm_ksym_ref(__bp_harden_hyp_vecs_start));
 		slot = data->hyp_vectors_slot;
 	}
